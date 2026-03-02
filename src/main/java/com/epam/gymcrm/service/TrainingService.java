@@ -3,8 +3,9 @@ package com.epam.gymcrm.service;
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
-import com.epam.gymcrm.domain.Training;
-import com.epam.gymcrm.domain.TrainingType;
+import com.epam.gymcrm.entity.Training;
+import com.epam.gymcrm.entity.TrainingType;
+import com.epam.gymcrm.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,23 +50,11 @@ public class TrainingService {
         log.debug("Creating training: traineeId={}, trainerId={}, type={}, duration={}",
                 traineeId, trainerId, trainingType, trainingDuration);
 
-        if (traineeDao.findById(traineeId).isEmpty()) {
-            log.warn("Trainee not found: {}", traineeId);
-            throw new RuntimeException("Trainee not found: " + traineeId);
-        }
+        validateTraineeExists(traineeId);
+        validateTrainerExists(trainerId);
+        validateDuration(trainingDuration);
 
-        if (trainerDao.findById(trainerId).isEmpty()) {
-            log.warn("Trainer not found: {}", trainerId);
-            throw new RuntimeException("Trainer not found: " + trainerId);
-        }
-
-        if (trainingDuration <= 0) {
-            log.warn("Invalid training duration: {}", trainingDuration);
-            throw new IllegalArgumentException("Training duration must be > 0");
-        }
-
-        Training training = new Training(
-                UUID.randomUUID(),
+        Training training = buildTraining(
                 traineeId,
                 trainerId,
                 trainingName,
@@ -74,11 +63,50 @@ public class TrainingService {
                 trainingDuration
         );
 
-        trainingDao.save(training);
+        Training saved = trainingDao.save(training);
 
-        log.info("Training created: id={}, name={}", training.getId(), trainingName);
+        log.info("Training created: id={}, name={}", saved.getId(), trainingName);
 
-        return training;
+        return saved;
+    }
+
+    private void validateTraineeExists(UUID traineeId) {
+        if (traineeDao.findById(traineeId).isEmpty()) {
+            log.warn("Trainee not found: {}", traineeId);
+            throw new NotFoundException("Trainee not found: " + traineeId);
+        }
+    }
+
+    private void validateTrainerExists(UUID trainerId) {
+        if (trainerDao.findById(trainerId).isEmpty()) {
+            log.warn("Trainer not found: {}", trainerId);
+            throw new NotFoundException("Trainer not found: " + trainerId);
+        }
+    }
+
+    private void validateDuration(int trainingDuration) {
+        if (trainingDuration <= 0) {
+            log.warn("Invalid training duration: {}", trainingDuration);
+            throw new IllegalArgumentException("Training duration must be > 0");
+        }
+    }
+
+    private Training buildTraining(UUID traineeId,
+                                   UUID trainerId,
+                                   String trainingName,
+                                   TrainingType trainingType,
+                                   LocalDateTime trainingDate,
+                                   int trainingDuration) {
+
+        return new Training(
+                UUID.randomUUID(),
+                traineeId,
+                trainerId,
+                trainingName,
+                trainingType,
+                trainingDate,
+                trainingDuration
+        );
     }
 
     public Optional<Training> selectTraining(UUID trainingId) {

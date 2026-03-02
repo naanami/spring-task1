@@ -1,6 +1,6 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.domain.TrainingType;
+import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.service.TrainerService;
 import org.junit.jupiter.api.Test;

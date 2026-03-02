@@ -1,6 +1,6 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.domain.Trainee;
+import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.service.TraineeService;
 import org.springframework.stereotype.Component;

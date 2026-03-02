@@ -1,7 +1,7 @@
 package com.epam.gymcrm.util;
 
 import com.epam.gymcrm.dao.UserDao;
-import com.epam.gymcrm.domain.User;
+import com.epam.gymcrm.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,5 +45,17 @@ class CredentialsGeneratorTest {
     void shouldGeneratePasswordWithCorrectLength() {
         String password = generator.generatePassword();
         assertEquals(10, password.length());
+    }
+
+    @Test
+    void shouldThrowIfFirstNameTooShort() {
+        assertThrows(IllegalArgumentException.class,
+                () -> generator.generateUniqueUsername("A", "Smith"));
+    }
+
+    @Test
+    void shouldThrowIfLastNameTooShort() {
+        assertThrows(IllegalArgumentException.class,
+                () -> generator.generateUniqueUsername("John", "S"));
     }
 }

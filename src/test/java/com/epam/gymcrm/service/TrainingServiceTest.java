@@ -3,10 +3,10 @@ package com.epam.gymcrm.service;
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
-import com.epam.gymcrm.domain.Trainee;
-import com.epam.gymcrm.domain.Trainer;
-import com.epam.gymcrm.domain.Training;
-import com.epam.gymcrm.domain.TrainingType;
+import com.epam.gymcrm.entity.Trainee;
+import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.Training;
+import com.epam.gymcrm.entity.TrainingType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

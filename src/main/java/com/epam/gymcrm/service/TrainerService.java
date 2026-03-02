@@ -1,8 +1,8 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.domain.Trainer;
-import com.epam.gymcrm.domain.TrainingType;
+import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +66,12 @@ public class TrainerService {
     }
 
     public void deleteAllTrainers() {
+        var ids = trainerDao.findAll().stream()
+                .map(com.epam.gymcrm.entity.Trainer::getUserId)
+                .collect(java.util.stream.Collectors.toSet());
+
         trainerDao.deleteAll();
+        userService.deleteUsers(ids);
     }
 
 }

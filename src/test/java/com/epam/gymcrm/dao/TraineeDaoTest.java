@@ -1,6 +1,6 @@
 package com.epam.gymcrm.dao;
 
-import com.epam.gymcrm.domain.Trainee;
+import com.epam.gymcrm.entity.Trainee;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

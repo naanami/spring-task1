@@ -1,6 +1,7 @@
 package com.epam.gymcrm.util;
 
 import com.epam.gymcrm.dao.UserDao;
+import com.epam.gymcrm.entity.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -23,40 +24,58 @@ public class CredentialsGenerator {
     }
 
     public String generateUniqueUsername(String firstName, String lastName) {
-
         String f = normalizeName(firstName);
         String l = normalizeName(lastName);
 
-        if (f.isEmpty() || l.isEmpty()) {
-            throw new IllegalArgumentException("first name and last name are required");
-        }
+        validateNamePart(f, "firstName");
+        validateNamePart(l, "lastName");
 
         String base = f + USERNAME_SEPARATOR + l;
 
-        if (!userDao.existsByUsername(base)) {
+        var matches = userDao.findByUsernamePrefix(base);
+
+        if (matches.isEmpty()) {
             return base;
         }
 
-        int suffix = 1;
-        String candidate = base + suffix;
-        while (userDao.existsByUsername(candidate)) {
-            suffix++;
-            candidate = base + suffix;
-        }
-        return candidate;
+        int maxSuffix = matches.stream()
+                .map(User::getUsername)
+                .mapToInt(u -> extractSuffix(u, base))
+                .max()
+                .orElse(0);
+
+        return base + (maxSuffix + 1);
     }
 
+    private int extractSuffix(String username, String base) {
+        if (username.equals(base)) return 0;
+        String rest = username.substring(base.length());
+        if (rest.isEmpty()) return 0;
+        if (!rest.chars().allMatch(Character::isDigit)) return 0;
+        return Integer.parseInt(rest);
+    }
+
+    private void validateNamePart(String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " is required");
+        }
+        if (value.length() < 2) {
+            throw new IllegalArgumentException(field + " must be at least 2 characters");
+        }
+    }
+
+
+
     private String normalizeName(String raw) {
-        if(raw == null){
-            return "";
-        }
+        if (raw == null) return null;
+
         String cleaned = raw.trim().replaceAll("\\s+", " ");
-        if(cleaned.isEmpty()){
-            return "";
-        }
+        if (cleaned.isEmpty()) return "";
+
         String lower = cleaned.toLowerCase();
         return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
+
 
     public String generatePassword() {
         int len = Math.max(1, passwordLength);

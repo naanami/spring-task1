@@ -1,4 +1,4 @@
-package com.epam.gymcrm.domain;
+package com.epam.gymcrm.entity;
 
 import java.time.LocalDate;
 import java.util.UUID;

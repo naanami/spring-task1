@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.UserDao;
-import com.epam.gymcrm.domain.User;
+import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.util.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ class UserServiceTest {
     }
 
     @Test
-    void registerUserShouldSaveUserAndReturnCredentials() {
+    void createBaseUserForProfileShouldSaveUserAndReturnCredentials() {
         GeneratedCredentials creds = userService.registerUser("John", "Smith");
 
         assertNotNull(creds.getUserId());
@@ -49,23 +49,21 @@ class UserServiceTest {
     }
 
     @Test
-    void registerUserShouldGenerateUniqueUsernameIfDuplicate() {
+    void createBaseUserForProfileShouldGenerateUniqueUsernameIfDuplicate() {
         userService.registerUser("John", "Smith");
         GeneratedCredentials creds2 = userService.registerUser("John", "Smith");
+        GeneratedCredentials creds3 = userService.registerUser("John", "Smith");
 
         assertEquals("John.Smith1", creds2.getUsername());
+        assertEquals("John.Smith2", creds3.getUsername());
     }
+
     @Test
-    void deleteAllUsersAndCountShouldWork() {
-        userService.registerUser("A", "B");
-        userService.registerUser("C", "D");
+    void createBaseUserForProfileShouldThrowWhenNameTooShort() {
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.registerUser("A", "Smith"));
 
-        assertEquals(2, userDao.findAll().size());
-
-        userService.deleteAllUsers();
-        assertEquals(0, userDao.findAll().size());
-
-        assertEquals(0, userService.countUsers());
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.registerUser("John", "S"));
     }
-
 }

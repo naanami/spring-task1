@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.domain.Trainee;
+import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,13 +70,19 @@ public class TraineeService {
     public void deleteTraineeProfile(UUID userId) {
         log.info("Deleting trainee profile: userId={}", userId);
         traineeDao.deleteById(userId);
+        userService.deleteUser(userId);
     }
     public long countTrainees() {
         return traineeDao.count();
     }
 
     public void deleteAllTrainees() {
+        var ids = traineeDao.findAll().stream()
+                .map(com.epam.gymcrm.entity.Trainee::getUserId)
+                .collect(java.util.stream.Collectors.toSet());
+
         traineeDao.deleteAll();
+        userService.deleteUsers(ids);
     }
 
 }

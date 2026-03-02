@@ -1,7 +1,7 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.domain.Training;
-import com.epam.gymcrm.domain.TrainingType;
+import com.epam.gymcrm.entity.Training;
+import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.service.TrainingService;
 import org.springframework.stereotype.Component;
 

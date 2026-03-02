@@ -2,8 +2,8 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.UserDao;
-import com.epam.gymcrm.domain.Trainee;
-import com.epam.gymcrm.domain.User;
+import com.epam.gymcrm.entity.Trainee;
+import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.util.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;

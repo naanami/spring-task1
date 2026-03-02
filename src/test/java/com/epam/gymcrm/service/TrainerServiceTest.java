@@ -2,9 +2,9 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.UserDao;
-import com.epam.gymcrm.domain.Trainer;
-import com.epam.gymcrm.domain.TrainingType;
-import com.epam.gymcrm.domain.User;
+import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.TrainingType;
+import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.util.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ class TrainerServiceTest {
     }
     @Test
     void deleteAllTrainersAndCountShouldWork() {
-        trainerService.createTrainerProfile("A", "B", TrainingType.CARDIO);
+        trainerService.createTrainerProfile("Lala", "Lulu", TrainingType.CARDIO);
         assertEquals(1, trainerDao.findAll().size());
         trainerService.deleteAllTrainers();
         assertEquals(0, trainerDao.findAll().size());

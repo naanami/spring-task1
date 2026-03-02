@@ -1,10 +1,9 @@
 package com.epam.gymcrm;
 
-import com.epam.gymcrm.domain.TrainingType;
+import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.facade.TraineeFacade;
 import com.epam.gymcrm.facade.TrainerFacade;
 import com.epam.gymcrm.facade.TrainingFacade;
-import com.epam.gymcrm.facade.UserFacade;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.time.LocalDate;
@@ -14,89 +13,97 @@ public class Application {
 
     public static void main(String[] args) {
 
-        AnnotationConfigApplicationContext context =
-                new AnnotationConfigApplicationContext("com.epam.gymcrm");
+        try (AnnotationConfigApplicationContext context =
+                     new AnnotationConfigApplicationContext("com.epam.gymcrm")) {
 
-        try {
-            UserFacade userFacade = context.getBean(UserFacade.class);
             TrainerFacade trainerFacade = context.getBean(TrainerFacade.class);
             TraineeFacade traineeFacade = context.getBean(TraineeFacade.class);
             TrainingFacade trainingFacade = context.getBean(TrainingFacade.class);
 
-            System.out.println("=== GYM CRM DEMO ===\n");
+            System.out.println("=== GYM CRM DEMO (Trainers & Trainees only) ===\n");
 
-            printCounts(userFacade, trainerFacade, traineeFacade, trainingFacade, "Initial counts");
+            printCounts(trainerFacade, traineeFacade, trainingFacade, "Initial counts");
 
-            System.out.println("\n--- Trainers reset + counter ---");
+            System.out.println("\n--- Reset domain data ---");
+            trainingFacade.deleteAllTrainings();
+            traineeFacade.deleteAllTrainees();
             trainerFacade.deleteAllTrainers();
-            System.out.println("Deleted all trainers.");
-            System.out.println("Trainers count = " + trainerFacade.countTrainers());
 
-            var trainerCreds = trainerFacade.createTrainerProfile("Mona", "Ali", TrainingType.YOGA);
-            System.out.println("Created 1 trainer -> id=" + trainerCreds.getUserId()
-                    + ", username=" + trainerCreds.getUsername()
+            printCounts(trainerFacade, traineeFacade, trainingFacade, "After reset");
+
+            System.out.println("\n--- Username uniqueness via Trainers ---");
+            var tr1 = trainerFacade.createTrainerProfile("Joon", "Lee", TrainingType.YOGA);
+            var tr2 = trainerFacade.createTrainerProfile("Joon", "Lee", TrainingType.PILATES);
+            var tr3 = trainerFacade.createTrainerProfile("Joon", "Lee", TrainingType.CARDIO);
+
+            System.out.println("Trainer #1 -> id=" + tr1.getUserId()
+                    + ", username=" + tr1.getUsername()
                     + ", specialization=" + TrainingType.YOGA);
+
+            System.out.println("Trainer #2 -> id=" + tr2.getUserId()
+                    + ", username=" + tr2.getUsername()
+                    + ", specialization=" + TrainingType.PILATES);
+
+            System.out.println("Trainer #3 -> id=" + tr3.getUserId()
+                    + ", username=" + tr3.getUsername()
+                    + ", specialization=" + TrainingType.CARDIO);
+
             System.out.println("Trainers count = " + trainerFacade.countTrainers());
 
-            System.out.println("\n--- Username uniqueness ---");
-            userFacade.deleteAllUsers();
-            System.out.println("Deleted all users.");
-            System.out.println("Users count = " + userFacade.countUsers());
-
-            var u1 = userFacade.registerUser("John", "Doe");
-            var u2 = userFacade.registerUser("John", "Doe");
-            var u3 = userFacade.registerUser("John", "Doe");
-
-            System.out.println("Created again:");
-            System.out.println("  John Doe #1 -> username=" + u1.getUsername());
-            System.out.println("  John Doe #2 -> username=" + u2.getUsername());
-            System.out.println("  John Doe #3 -> username=" + u3.getUsername());
-            System.out.println("Users count = " + userFacade.countUsers());
-
-            System.out.println("\n--- Trainee + Training ---");
-
-            var traineeCreds = traineeFacade.createTraineeProfile(
+            System.out.println("\n--- Create Trainees ---");
+            var ta1 = traineeFacade.createTraineeProfile(
+                    "Anna",
+                    "Smith",
+                    LocalDate.of(2000, 5, 10),
+                    "Yerevan"
+            );
+            var ta2 = traineeFacade.createTraineeProfile(
                     "Anna",
                     "Smith",
                     LocalDate.of(2000, 5, 10),
                     "Yerevan"
             );
 
-            System.out.println("Created trainee -> id=" + traineeCreds.getUserId()
-                    + ", username=" + traineeCreds.getUsername()
+            System.out.println("Trainee #1 -> id=" + ta1.getUserId()
+                    + ", username=" + ta1.getUsername()
                     + ", address=Yerevan");
 
+            System.out.println("Trainee #2 -> id=" + ta2.getUserId()
+                    + ", username=" + ta2.getUsername()
+                    + ", address=Yerevan");
+
+            System.out.println("Trainees count = " + traineeFacade.countTrainees());
+
+            System.out.println("\n--- Create Training ---");
             var training = trainingFacade.createTraining(
-                    traineeCreds.getUserId(),
-                    trainerCreds.getUserId(),
+                    ta1.getUserId(),
+                    tr1.getUserId(),
                     "Morning Session",
                     TrainingType.YOGA,
                     LocalDateTime.now(),
                     60
             );
 
-            System.out.println("Created training -> id=" + training.getId()
+            System.out.println("Training -> id=" + training.getId()
                     + ", name=" + training.getTrainingName()
                     + ", type=" + training.getTrainingType()
                     + ", duration=" + training.getTrainingDuration());
 
-            printCounts(userFacade, trainerFacade, traineeFacade, trainingFacade, "Final counts");
+            printCounts(trainerFacade, traineeFacade, trainingFacade, "Final counts");
+
+            long accounts = trainerFacade.countTrainers() + traineeFacade.countTrainees();
+            System.out.println("\nAccounts (trainers + trainees) = " + accounts);
 
             System.out.println("\n=== DEMO END ===");
-
-        } finally {
-            context.close();
         }
     }
 
-    private static void printCounts(UserFacade userFacade,
-                                    TrainerFacade trainerFacade,
+    private static void printCounts(TrainerFacade trainerFacade,
                                     TraineeFacade traineeFacade,
                                     TrainingFacade trainingFacade,
                                     String title) {
 
         System.out.println("[" + title + "]");
-        System.out.println("Users:     " + userFacade.countUsers());
         System.out.println("Trainers:  " + trainerFacade.countTrainers());
         System.out.println("Trainees:  " + traineeFacade.countTrainees());
         System.out.println("Trainings: " + trainingFacade.countTrainings());
