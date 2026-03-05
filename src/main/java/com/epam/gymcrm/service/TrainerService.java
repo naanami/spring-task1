@@ -1,35 +1,46 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.entity.Trainer;
-import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.Training;
+import com.epam.gymcrm.entity.TrainingType;
+import com.epam.gymcrm.entity.User;
+import com.epam.gymcrm.exception.NotFoundException;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
+import com.epam.gymcrm.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class TrainerService {
 
     private static final Logger log = LoggerFactory.getLogger(TrainerService.class);
+    private final TrainingRepository trainingRepository;
 
-    private UserService userService;
-    private TrainerDao trainerDao;
+    private final UserService userService;
+    private final UserRepository userRepository;
+    private final TrainerRepository trainerRepository;
 
-    @Autowired
-    public void setUserService(UserService userService) {
+    public TrainerService(UserService userService,
+                          UserRepository userRepository,
+                          TrainerRepository trainerRepository,
+                          TrainingRepository trainingRepository) {
         this.userService = userService;
+        this.userRepository = userRepository;
+        this.trainerRepository = trainerRepository;
+        this.trainingRepository = trainingRepository;
     }
 
-    @Autowired
-    public void setTrainerDao(TrainerDao trainerDao) {
-        this.trainerDao = trainerDao;
-    }
-
+    @Transactional
     public GeneratedCredentials createTrainerProfile(String firstName,
                                                      String lastName,
                                                      TrainingType specialization) {
@@ -38,40 +49,59 @@ public class TrainerService {
 
         GeneratedCredentials creds = userService.registerUser(firstName, lastName);
 
-        Trainer trainer = new Trainer(creds.getUserId(), specialization);
-        trainerDao.save(trainer);
+        User user = userRepository.findById(creds.getUserId())
+                .orElseThrow(() -> new NotFoundException("User not found: " + creds.getUserId()));
 
-        log.info("Trainer profile created: userId={}, specialization={}",
-                creds.getUserId(), specialization);
+        Trainer trainer = new Trainer(user, specialization);
+        trainerRepository.save(trainer);
 
+        log.info("Trainer profile created: userId={}, specialization={}", creds.getUserId(), specialization);
         return creds;
     }
 
+    @Transactional(readOnly = true)
     public Optional<Trainer> selectTrainerProfile(UUID userId) {
         log.debug("Selecting trainer profile: userId={}", userId);
-        return trainerDao.findById(userId);
+        return trainerRepository.findByUserId(userId);
     }
 
+    @Transactional
     public Trainer updateTrainerProfile(UUID userId, TrainingType newSpecialization) {
-        log.info("Updating trainer specialization: userId={}, newSpecialization={}",
-                userId, newSpecialization);
+        log.info("Updating trainer specialization: userId={}, newSpecialization={}", userId, newSpecialization);
 
-        Trainer updated = new Trainer(userId, newSpecialization);
-        trainerDao.save(updated);
+        Trainer trainer = trainerRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("Trainer not found for userId: " + userId));
 
-        return updated;
+        trainer.setSpecialization(newSpecialization);
+        return trainerRepository.save(trainer);
     }
+
+    @Transactional(readOnly = true)
     public long countTrainers() {
-        return trainerDao.count();
+        return trainerRepository.count();
     }
 
+    @Transactional
     public void deleteAllTrainers() {
-        var ids = trainerDao.findAll().stream()
-                .map(com.epam.gymcrm.entity.Trainer::getUserId)
-                .collect(java.util.stream.Collectors.toSet());
+        var userIds = trainerRepository.findAll().stream()
+                .map(t -> t.getUser().getId())
+                .collect(Collectors.toSet());
 
-        trainerDao.deleteAll();
-        userService.deleteUsers(ids);
+        trainerRepository.deleteAll();
+        userService.deleteUsers(userIds);
     }
 
+    @Transactional(readOnly = true)
+    public List<Training> getTrainerTrainings(String username,
+                                              LocalDateTime from,
+                                              LocalDateTime to,
+                                              String traineeName) {
+
+        return trainingRepository.findTrainerTrainings(
+                username,
+                from,
+                to,
+                traineeName
+        );
+    }
 }

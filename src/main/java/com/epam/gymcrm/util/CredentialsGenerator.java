@@ -1,7 +1,6 @@
 package com.epam.gymcrm.util;
 
-import com.epam.gymcrm.dao.UserDao;
-import com.epam.gymcrm.entity.User;
+import com.epam.gymcrm.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +10,19 @@ import java.security.SecureRandom;
 public class CredentialsGenerator {
 
     private static final String USERNAME_SEPARATOR = ".";
-    private static final String PASSWORD_CHARS = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm0123456789";
+    private static final String PASSWORD_CHARS =
+            "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm0123456789";
     private static final int DEFAULT_PASSWORD_LENGTH = 10;
 
-    private final UserDao userDao;
+    private final UserRepository userRepository;
     private final SecureRandom random = new SecureRandom();
     private final int passwordLength;
 
-    public CredentialsGenerator(UserDao userDao, @Value("${app.password.length:" +  DEFAULT_PASSWORD_LENGTH + "}")  int passwordLength) {
-        this.userDao = userDao;
+    public CredentialsGenerator(
+            UserRepository userRepository,
+            @Value("${app.password.length:" + DEFAULT_PASSWORD_LENGTH + "}") int passwordLength
+    ) {
+        this.userRepository = userRepository;
         this.passwordLength = passwordLength;
     }
 
@@ -32,27 +35,15 @@ public class CredentialsGenerator {
 
         String base = f + USERNAME_SEPARATOR + l;
 
-        var matches = userDao.findByUsernamePrefix(base);
+        String candidate = base;
+        int suffix = 0;
 
-        if (matches.isEmpty()) {
-            return base;
+        while (userRepository.existsByUsername(candidate)) {
+            suffix++;
+            candidate = base + suffix;
         }
 
-        int maxSuffix = matches.stream()
-                .map(User::getUsername)
-                .mapToInt(u -> extractSuffix(u, base))
-                .max()
-                .orElse(0);
-
-        return base + (maxSuffix + 1);
-    }
-
-    private int extractSuffix(String username, String base) {
-        if (username.equals(base)) return 0;
-        String rest = username.substring(base.length());
-        if (rest.isEmpty()) return 0;
-        if (!rest.chars().allMatch(Character::isDigit)) return 0;
-        return Integer.parseInt(rest);
+        return candidate;
     }
 
     private void validateNamePart(String value, String field) {
@@ -64,8 +55,6 @@ public class CredentialsGenerator {
         }
     }
 
-
-
     private String normalizeName(String raw) {
         if (raw == null) return null;
 
@@ -75,7 +64,6 @@ public class CredentialsGenerator {
         String lower = cleaned.toLowerCase();
         return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
-
 
     public String generatePassword() {
         int len = Math.max(1, passwordLength);

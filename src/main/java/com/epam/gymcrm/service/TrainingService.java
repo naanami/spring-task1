@@ -1,15 +1,17 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingDao;
+import com.epam.gymcrm.entity.Trainee;
+import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.exception.NotFoundException;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,67 +23,50 @@ public class TrainingService {
 
     private static final Logger log = LoggerFactory.getLogger(TrainingService.class);
 
-    private TrainingDao trainingDao;
-    private TraineeDao traineeDao;
-    private TrainerDao trainerDao;
+    private final TrainingRepository trainingRepository;
+    private final TraineeRepository traineeRepository;
+    private final TrainerRepository trainerRepository;
 
-    @Autowired
-    public void setTrainingDao(TrainingDao trainingDao) {
-        this.trainingDao = trainingDao;
+    public TrainingService(TrainingRepository trainingRepository,
+                           TraineeRepository traineeRepository,
+                           TrainerRepository trainerRepository) {
+        this.trainingRepository = trainingRepository;
+        this.traineeRepository = traineeRepository;
+        this.trainerRepository = trainerRepository;
     }
 
-    @Autowired
-    public void setTraineeDao(TraineeDao traineeDao) {
-        this.traineeDao = traineeDao;
-    }
-
-    @Autowired
-    public void setTrainerDao(TrainerDao trainerDao) {
-        this.trainerDao = trainerDao;
-    }
-
-    public Training createTraining(UUID traineeId,
-                                   UUID trainerId,
+    @Transactional
+    public Training createTraining(UUID traineeUserId,
+                                   UUID trainerUserId,
                                    String trainingName,
                                    TrainingType trainingType,
                                    LocalDateTime trainingDate,
                                    int trainingDuration) {
 
-        log.debug("Creating training: traineeId={}, trainerId={}, type={}, duration={}",
-                traineeId, trainerId, trainingType, trainingDuration);
+        log.debug("Creating training: traineeUserId={}, trainerUserId={}, type={}, duration={}",
+                traineeUserId, trainerUserId, trainingType, trainingDuration);
 
-        validateTraineeExists(traineeId);
-        validateTrainerExists(trainerId);
         validateDuration(trainingDuration);
 
-        Training training = buildTraining(
-                traineeId,
-                trainerId,
+        Trainee trainee = traineeRepository.findByUserId(traineeUserId)
+                .orElseThrow(() -> new NotFoundException("Trainee not found for userId: " + traineeUserId));
+
+        Trainer trainer = trainerRepository.findByUserId(trainerUserId)
+                .orElseThrow(() -> new NotFoundException("Trainer not found for userId: " + trainerUserId));
+
+        Training training = new Training(
+                trainee,
+                trainer,
                 trainingName,
                 trainingType,
                 trainingDate,
                 trainingDuration
         );
 
-        Training saved = trainingDao.save(training);
+        Training saved = trainingRepository.save(training);
 
         log.info("Training created: id={}, name={}", saved.getId(), trainingName);
-
         return saved;
-    }
-
-    private void validateTraineeExists(UUID traineeId) {
-        if (traineeDao.findById(traineeId).isEmpty()) {
-            log.warn("Trainee not found: {}", traineeId);
-            throw new NotFoundException("Trainee not found: " + traineeId);
-        }
-    }
-
-    private void validateTrainerExists(UUID trainerId) {
-        if (trainerDao.findById(trainerId).isEmpty()) {
-            log.warn("Trainer not found: {}", trainerId);
-            throw new NotFoundException("Trainer not found: " + trainerId);
-        }
     }
 
     private void validateDuration(int trainingDuration) {
@@ -91,39 +76,25 @@ public class TrainingService {
         }
     }
 
-    private Training buildTraining(UUID traineeId,
-                                   UUID trainerId,
-                                   String trainingName,
-                                   TrainingType trainingType,
-                                   LocalDateTime trainingDate,
-                                   int trainingDuration) {
-
-        return new Training(
-                UUID.randomUUID(),
-                traineeId,
-                trainerId,
-                trainingName,
-                trainingType,
-                trainingDate,
-                trainingDuration
-        );
-    }
-
+    @Transactional(readOnly = true)
     public Optional<Training> selectTraining(UUID trainingId) {
         log.debug("Selecting training: id={}", trainingId);
-        return trainingDao.findById(trainingId);
+        return trainingRepository.findById(trainingId);
     }
 
+    @Transactional(readOnly = true)
     public List<Training> selectAllTrainings() {
         log.debug("Selecting all trainings");
-        return trainingDao.findAll();
+        return trainingRepository.findAll();
     }
+
+    @Transactional(readOnly = true)
     public long countTrainings() {
-        return trainingDao.count();
+        return trainingRepository.count();
     }
 
+    @Transactional
     public void deleteAllTrainings() {
-        trainingDao.deleteAll();
+        trainingRepository.deleteAll();
     }
-
 }
