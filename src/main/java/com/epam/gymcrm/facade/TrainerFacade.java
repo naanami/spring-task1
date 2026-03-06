@@ -21,7 +21,6 @@ public class TrainerFacade {
         this.authService = authService;
     }
 
-    // No authentication required
     public GeneratedCredentials createTrainerProfile(
             String firstName,
             String lastName,

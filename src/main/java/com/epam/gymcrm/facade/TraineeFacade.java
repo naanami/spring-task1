@@ -2,11 +2,16 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainee;
+import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.Training;
+import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TraineeService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,7 +26,6 @@ public class TraineeFacade {
         this.authService = authService;
     }
 
-    // No authentication required
     public GeneratedCredentials createTraineeProfile(
             String firstName,
             String lastName,
@@ -54,5 +58,22 @@ public class TraineeFacade {
     public void deleteAllTrainees(String username, String password) {
         authService.authenticate(username, password);
         traineeService.deleteAllTrainees();
+    }
+    public List<Training> getTraineeTrainings(String username,
+                                              String password,
+                                              String traineeUsername,
+                                              LocalDateTime from,
+                                              LocalDateTime to,
+                                              String trainerName,
+                                              TrainingType type) {
+        authService.authenticate(username, password);
+        return traineeService.getTraineeTrainings(traineeUsername, from, to, trainerName, type);
+    }
+
+    public List<Trainer> getNotAssignedTrainers(String username,
+                                                String password,
+                                                String traineeUsername) {
+        authService.authenticate(username, password);
+        return traineeService.getNotAssignedTrainers(traineeUsername);
     }
 }

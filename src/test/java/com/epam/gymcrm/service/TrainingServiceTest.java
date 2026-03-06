@@ -1,111 +1,145 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
+import com.epam.gymcrm.entity.User;
+import com.epam.gymcrm.exception.NotFoundException;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class TrainingServiceTest {
 
+    private TrainingRepository trainingRepository;
+    private TraineeRepository traineeRepository;
+    private TrainerRepository trainerRepository;
     private TrainingService trainingService;
-    private TraineeDao traineeDao;
-    private TrainerDao trainerDao;
 
     @BeforeEach
-    void setup() {
-        Map<UUID, Trainee> traineeStorage = new ConcurrentHashMap<>();
-        Map<UUID, Trainer> trainerStorage = new ConcurrentHashMap<>();
-        Map<UUID, Training> trainingStorage = new ConcurrentHashMap<>();
+    void setUp() {
+        trainingRepository = mock(TrainingRepository.class);
+        traineeRepository = mock(TraineeRepository.class);
+        trainerRepository = mock(TrainerRepository.class);
 
-        traineeDao = new TraineeDao();
-        traineeDao.setStorage(traineeStorage);
-
-        trainerDao = new TrainerDao();
-        trainerDao.setStorage(trainerStorage);
-
-        TrainingDao trainingDao = new TrainingDao();
-        trainingDao.setStorage(trainingStorage);
-
-        trainingService = new TrainingService();
-        trainingService.setTraineeDao(traineeDao);
-        trainingService.setTrainerDao(trainerDao);
-        trainingService.setTrainingDao(trainingDao);
+        trainingService = new TrainingService(
+                trainingRepository,
+                traineeRepository,
+                trainerRepository
+        );
     }
 
     @Test
     void createTrainingShouldCreateWhenTraineeAndTrainerExist() {
-        UUID traineeId = UUID.randomUUID();
-        UUID trainerId = UUID.randomUUID();
+        UUID traineeUserId = UUID.randomUUID();
+        UUID trainerUserId = UUID.randomUUID();
 
-        traineeDao.save(new Trainee(traineeId, LocalDate.of(1999, 1, 1), "Addr"));
-        trainerDao.save(new Trainer(trainerId, TrainingType.CARDIO));
+        Trainee trainee = new Trainee(mock(User.class), LocalDate.of(2000, 1, 1), "Addr");
+        Trainer trainer = new Trainer(mock(User.class), TrainingType.CARDIO);
+
+        when(traineeRepository.findByUserId(traineeUserId)).thenReturn(Optional.of(trainee));
+        when(trainerRepository.findByUserId(trainerUserId)).thenReturn(Optional.of(trainer));
+        when(trainingRepository.save(any(Training.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Training training = trainingService.createTraining(
-                traineeId,
-                trainerId,
+                traineeUserId,
+                trainerUserId,
                 "Morning",
                 TrainingType.CARDIO,
                 LocalDateTime.of(2026, 1, 1, 10, 0),
                 60
         );
 
-        assertNotNull(training.getId());
-        assertEquals(traineeId, training.getTraineeId());
-        assertEquals(trainerId, training.getTrainerId());
+        assertEquals("Morning", training.getTrainingName());
         assertEquals(60, training.getTrainingDuration());
+        assertEquals(TrainingType.CARDIO, training.getTrainingType());
     }
 
     @Test
     void createTrainingShouldThrowIfDurationInvalid() {
-        UUID traineeId = UUID.randomUUID();
-        UUID trainerId = UUID.randomUUID();
-
-        traineeDao.save(new Trainee(traineeId, LocalDate.of(1999, 1, 1), "Addr"));
-        trainerDao.save(new Trainer(trainerId, TrainingType.CARDIO));
-
         assertThrows(IllegalArgumentException.class, () ->
                 trainingService.createTraining(
-                        traineeId, trainerId, "X", TrainingType.CARDIO, LocalDateTime.now(), 0
-                )
-        );
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        "X",
+                        TrainingType.CARDIO,
+                        LocalDateTime.now(),
+                        0
+                ));
     }
 
     @Test
     void createTrainingShouldThrowIfTraineeMissing() {
-        UUID traineeId = UUID.randomUUID();
-        UUID trainerId = UUID.randomUUID();
-        trainerDao.save(new Trainer(trainerId, TrainingType.CARDIO));
+        UUID traineeUserId = UUID.randomUUID();
+        UUID trainerUserId = UUID.randomUUID();
 
-        assertThrows(RuntimeException.class, () ->
+        when(traineeRepository.findByUserId(traineeUserId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () ->
                 trainingService.createTraining(
-                        traineeId, trainerId, "X", TrainingType.CARDIO, LocalDateTime.now(), 30
-                )
-        );
+                        traineeUserId,
+                        trainerUserId,
+                        "X",
+                        TrainingType.CARDIO,
+                        LocalDateTime.now(),
+                        30
+                ));
     }
 
     @Test
     void createTrainingShouldThrowIfTrainerMissing() {
-        UUID traineeId = UUID.randomUUID();
-        UUID trainerId = UUID.randomUUID();
-        traineeDao.save(new Trainee(traineeId, LocalDate.of(1999, 1, 1), "Addr"));
+        UUID traineeUserId = UUID.randomUUID();
+        UUID trainerUserId = UUID.randomUUID();
 
-        assertThrows(RuntimeException.class, () ->
+        Trainee trainee = new Trainee(mock(User.class), LocalDate.of(2000, 1, 1), "Addr");
+        when(traineeRepository.findByUserId(traineeUserId)).thenReturn(Optional.of(trainee));
+        when(trainerRepository.findByUserId(trainerUserId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () ->
                 trainingService.createTraining(
-                        traineeId, trainerId, "X", TrainingType.CARDIO, LocalDateTime.now(), 30
-                )
-        );
+                        traineeUserId,
+                        trainerUserId,
+                        "X",
+                        TrainingType.CARDIO,
+                        LocalDateTime.now(),
+                        30
+                ));
+    }
+    @Test
+    void countTrainingsShouldReturnRepositoryCount() {
+        when(trainingRepository.count()).thenReturn(4L);
+
+        long result = trainingService.countTrainings();
+
+        assertEquals(4L, result);
+    }
+
+    @Test
+    void selectTrainingShouldDelegateToRepository() {
+        UUID id = UUID.randomUUID();
+        Training training = mock(Training.class);
+        when(trainingRepository.findById(id)).thenReturn(Optional.of(training));
+
+        Optional<Training> result = trainingService.selectTraining(id);
+
+        assertTrue(result.isPresent());
+        assertSame(training, result.get());
+    }
+
+    @Test
+    void deleteAllTrainingsShouldDelegateToRepository() {
+        trainingService.deleteAllTrainings();
+        verify(trainingRepository).deleteAll();
     }
 }
