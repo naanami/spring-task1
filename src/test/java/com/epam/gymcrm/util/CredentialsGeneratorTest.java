@@ -38,8 +38,21 @@ class CredentialsGeneratorTest {
     }
 
     @Test
+    void shouldGenerateSecondSuffixWhenFirstIsTaken() {
+        when(userRepository.existsByUsername("John.Smith")).thenReturn(true);
+        when(userRepository.existsByUsername("John.Smith1")).thenReturn(true);
+        when(userRepository.existsByUsername("John.Smith2")).thenReturn(false);
+
+        String username = generator.generateUniqueUsername("John", "Smith");
+
+        assertEquals("John.Smith2", username);
+    }
+
+    @Test
     void shouldGeneratePasswordWithCorrectLength() {
         String password = generator.generatePassword();
+
+        assertNotNull(password);
         assertEquals(10, password.length());
     }
 
@@ -53,5 +66,14 @@ class CredentialsGeneratorTest {
     void shouldThrowIfLastNameTooShort() {
         assertThrows(IllegalArgumentException.class,
                 () -> generator.generateUniqueUsername("John", "S"));
+    }
+
+    @Test
+    void shouldNormalizeNames() {
+        when(userRepository.existsByUsername("John.Smith")).thenReturn(false);
+
+        String username = generator.generateUniqueUsername("  jOhN  ", "  sMiTh ");
+
+        assertEquals("John.Smith", username);
     }
 }

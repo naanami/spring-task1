@@ -60,24 +60,41 @@ class TrainerServiceTest {
     }
 
     @Test
+    void selectTrainerProfileShouldReturnTrainerByUsername() {
+        Trainer trainer = mock(Trainer.class);
+        when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainer));
+
+        Trainer result = trainerService.selectTrainerProfile("John.Doe");
+
+        assertSame(trainer, result);
+    }
+
+    @Test
     void updateTrainerProfileShouldUpdateSpecialization() {
         User user = new User("John", "Doe", "John.Doe", "secret", true);
         Trainer trainer = new Trainer(user, TrainingType.CARDIO);
 
-        when(trainerRepository.findByUserId(any())).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainer));
         when(trainerRepository.save(any(Trainer.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainer updated = trainerService.updateTrainerProfile(UUID.randomUUID(), TrainingType.YOGA);
+        Trainer updated = trainerService.updateTrainerProfile("John.Doe", TrainingType.YOGA);
 
         assertEquals(TrainingType.YOGA, updated.getSpecialization());
     }
 
     @Test
     void updateTrainerProfileShouldThrowIfTrainerMissing() {
-        when(trainerRepository.findByUserId(any())).thenReturn(Optional.empty());
+        when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> trainerService.updateTrainerProfile(UUID.randomUUID(), TrainingType.YOGA));
+                () -> trainerService.updateTrainerProfile("John.Doe", TrainingType.YOGA));
+    }
+
+    @Test
+    void countTrainersShouldReturnRepositoryCount() {
+        when(trainerRepository.count()).thenReturn(3L);
+
+        assertEquals(3L, trainerService.countTrainers());
     }
 
     @Test
@@ -93,22 +110,5 @@ class TrainerServiceTest {
                 trainerService.getTrainerTrainings("John.Doe", from, to, "Anna");
 
         assertEquals(1, result.size());
-    }
-    @Test
-    void countTrainersShouldReturnRepositoryCount() {
-        when(trainerRepository.count()).thenReturn(3L);
-        assertEquals(3L, trainerService.countTrainers());
-    }
-
-    @Test
-    void selectTrainerProfileShouldDelegateToRepository() {
-        UUID id = UUID.randomUUID();
-        Trainer trainer = mock(Trainer.class);
-        when(trainerRepository.findByUserId(id)).thenReturn(Optional.of(trainer));
-
-        Optional<Trainer> result = trainerService.selectTrainerProfile(id);
-
-        assertTrue(result.isPresent());
-        assertSame(trainer, result.get());
     }
 }

@@ -16,16 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class TrainerService {
 
     private static final Logger log = LoggerFactory.getLogger(TrainerService.class);
-    private final TrainingRepository trainingRepository;
 
+    private final TrainingRepository trainingRepository;
     private final UserService userService;
     private final UserRepository userRepository;
     private final TrainerRepository trainerRepository;
@@ -44,7 +42,6 @@ public class TrainerService {
     public GeneratedCredentials createTrainerProfile(String firstName,
                                                      String lastName,
                                                      TrainingType specialization) {
-
         log.debug("Creating trainer profile for {} {}", firstName, lastName);
 
         GeneratedCredentials creds = userService.registerUser(firstName, lastName);
@@ -60,17 +57,19 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Trainer> selectTrainerProfile(UUID userId) {
-        log.debug("Selecting trainer profile: userId={}", userId);
-        return trainerRepository.findByUserId(userId);
+    public Trainer selectTrainerProfile(String username) {
+        log.debug("Selecting trainer profile: username={}", username);
+
+        return trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
     }
 
     @Transactional
-    public Trainer updateTrainerProfile(UUID userId, TrainingType newSpecialization) {
-        log.info("Updating trainer specialization: userId={}, newSpecialization={}", userId, newSpecialization);
+    public Trainer updateTrainerProfile(String username, TrainingType newSpecialization) {
+        log.info("Updating trainer specialization: username={}, newSpecialization={}", username, newSpecialization);
 
-        Trainer trainer = trainerRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Trainer not found for userId: " + userId));
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
 
         trainer.setSpecialization(newSpecialization);
         return trainerRepository.save(trainer);
@@ -96,12 +95,6 @@ public class TrainerService {
                                               LocalDateTime from,
                                               LocalDateTime to,
                                               String traineeName) {
-
-        return trainingRepository.findTrainerTrainings(
-                username,
-                from,
-                to,
-                traineeName
-        );
+        return trainingRepository.findTrainerTrainings(username, from, to, traineeName);
     }
 }

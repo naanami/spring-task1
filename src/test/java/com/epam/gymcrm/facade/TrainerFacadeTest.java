@@ -2,13 +2,15 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TrainerService;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,16 +42,15 @@ class TrainerFacadeTest {
         AuthService authService = mock(AuthService.class);
         TrainerFacade facade = new TrainerFacade(service, authService);
 
-        UUID userId = UUID.randomUUID();
-        Optional<Trainer> expected = Optional.of(mock(Trainer.class));
+        Trainer expected = mock(Trainer.class);
         when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
-        when(service.selectTrainerProfile(userId)).thenReturn(expected);
+        when(service.selectTrainerProfile("user")).thenReturn(expected);
 
-        Optional<Trainer> actual = facade.selectTrainerProfile("user", "pass", userId);
+        Trainer actual = facade.selectTrainerProfile("user", "pass");
 
         assertSame(expected, actual);
         verify(authService).authenticate("user", "pass");
-        verify(service).selectTrainerProfile(userId);
+        verify(service).selectTrainerProfile("user");
     }
 
     @Test
@@ -58,17 +59,17 @@ class TrainerFacadeTest {
         AuthService authService = mock(AuthService.class);
         TrainerFacade facade = new TrainerFacade(service, authService);
 
-        UUID userId = UUID.randomUUID();
         Trainer trainer = mock(Trainer.class);
         when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
-        when(service.updateTrainerProfile(userId, TrainingType.YOGA)).thenReturn(trainer);
+        when(service.updateTrainerProfile("user", TrainingType.YOGA)).thenReturn(trainer);
 
-        Trainer actual = facade.updateTrainerProfile("user", "pass", userId, TrainingType.YOGA);
+        Trainer actual = facade.updateTrainerProfile("user", "pass", TrainingType.YOGA);
 
         assertSame(trainer, actual);
         verify(authService).authenticate("user", "pass");
-        verify(service).updateTrainerProfile(userId, TrainingType.YOGA);
+        verify(service).updateTrainerProfile("user", TrainingType.YOGA);
     }
+
     @Test
     void countTrainersShouldAuthenticateThenDelegate() {
         TrainerService service = mock(TrainerService.class);
@@ -97,5 +98,25 @@ class TrainerFacadeTest {
 
         verify(authService).authenticate("user", "pass");
         verify(service).deleteAllTrainers();
+    }
+
+    @Test
+    void getTrainerTrainingsShouldAuthenticateThenDelegate() {
+        TrainerService service = mock(TrainerService.class);
+        AuthService authService = mock(AuthService.class);
+        TrainerFacade facade = new TrainerFacade(service, authService);
+
+        List<Training> trainings = List.of(mock(Training.class));
+        LocalDateTime from = LocalDateTime.now().minusDays(1);
+        LocalDateTime to = LocalDateTime.now();
+
+        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
+        when(service.getTrainerTrainings("user", from, to, "Anna")).thenReturn(trainings);
+
+        List<Training> result = facade.getTrainerTrainings("user", "pass", from, to, "Anna");
+
+        assertSame(trainings, result);
+        verify(authService).authenticate("user", "pass");
+        verify(service).getTrainerTrainings("user", from, to, "Anna");
     }
 }

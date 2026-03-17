@@ -1,5 +1,6 @@
 package com.epam.gymcrm.repository;
 
+import com.epam.gymcrm.config.AppConfig;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
@@ -8,14 +9,16 @@ import com.epam.gymcrm.entity.User;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@DataJpaTest
+@SpringJUnitConfig(AppConfig.class)
+@Transactional
 class TraineeCascadeDeleteTest {
 
     @Autowired

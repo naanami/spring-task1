@@ -1,13 +1,16 @@
 package com.epam.gymcrm.repository;
 
+import com.epam.gymcrm.config.AppConfig;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.entity.User;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,7 +18,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@DataJpaTest
+@SpringJUnitConfig(AppConfig.class)
+@Transactional
 class TrainingRepositoryTest {
 
     @Autowired
@@ -29,6 +33,9 @@ class TrainingRepositoryTest {
 
     @Autowired
     private TrainingRepository trainingRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void findTraineeTrainingsShouldFilterCorrectly() {
@@ -51,6 +58,9 @@ class TrainingRepositoryTest {
                 LocalDateTime.now().minusDays(1),
                 45
         ));
+
+        entityManager.flush();
+        entityManager.clear();
 
         List<Training> result = trainingRepository.findTraineeTrainings(
                 "Anna.Smith",
@@ -79,11 +89,71 @@ class TrainingRepositoryTest {
                 60
         ));
 
+        entityManager.flush();
+        entityManager.clear();
+
         List<Training> result = trainingRepository.findTrainerTrainings(
                 "John.Doe",
                 LocalDateTime.now().minusDays(30),
                 LocalDateTime.now().plusDays(1),
                 "Anna Smith"
+        );
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void findTrainerTrainingsShouldWorkWithNullDatesAndNullName() {
+        User trainerUser = userRepository.save(new User("John", "Doe", "John.Doe", "pass", true));
+        User traineeUser = userRepository.save(new User("Anna", "Smith", "Anna.Smith", "pass", true));
+
+        Trainer trainer = trainerRepository.save(new Trainer(trainerUser, TrainingType.YOGA));
+        Trainee trainee = traineeRepository.save(new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr"));
+
+        trainingRepository.save(new Training(
+                trainee, trainer, "Morning Yoga",
+                TrainingType.YOGA,
+                LocalDateTime.now().minusDays(1),
+                60
+        ));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Training> result = trainingRepository.findTrainerTrainings(
+                "John.Doe",
+                null,
+                null,
+                null
+        );
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void findTraineeTrainingsShouldWorkWithNullDatesAndNullTrainerName() {
+        User trainerUser = userRepository.save(new User("John", "Doe", "John.Doe", "pass", true));
+        User traineeUser = userRepository.save(new User("Anna", "Smith", "Anna.Smith", "pass", true));
+
+        Trainer trainer = trainerRepository.save(new Trainer(trainerUser, TrainingType.YOGA));
+        Trainee trainee = traineeRepository.save(new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr"));
+
+        trainingRepository.save(new Training(
+                trainee, trainer, "Morning Yoga",
+                TrainingType.YOGA,
+                LocalDateTime.now().minusDays(1),
+                60
+        ));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Training> result = trainingRepository.findTraineeTrainings(
+                "Anna.Smith",
+                null,
+                null,
+                null,
+                TrainingType.YOGA
         );
 
         assertEquals(1, result.size());
@@ -101,6 +171,9 @@ class TrainingRepositoryTest {
 
         trainee.addTrainer(trainer1);
         traineeRepository.save(trainee);
+
+        entityManager.flush();
+        entityManager.clear();
 
         List<Trainer> result = trainerRepository.findNotAssignedToTrainee("Anna.Smith");
 

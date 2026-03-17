@@ -1,7 +1,11 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dto.GeneratedCredentials;
-import com.epam.gymcrm.entity.*;
+import com.epam.gymcrm.entity.Trainee;
+import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.Training;
+import com.epam.gymcrm.entity.TrainingType;
+import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.exception.NotFoundException;
 import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
@@ -15,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,7 +37,6 @@ public class TraineeService {
                           UserService userService,
                           TrainerRepository trainerRepository,
                           TrainingRepository trainingRepository) {
-
         this.traineeRepository = traineeRepository;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -48,7 +49,6 @@ public class TraineeService {
                                                      String lastName,
                                                      LocalDate dateOfBirth,
                                                      String address) {
-
         log.debug("Creating trainee profile for {} {}", firstName, lastName);
 
         GeneratedCredentials creds = userService.registerUser(firstName, lastName);
@@ -64,39 +64,43 @@ public class TraineeService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Trainee> selectTraineeProfile(UUID userId) {
-        log.debug("Selecting trainee profile: userId={}", userId);
-        return traineeRepository.findByUserId(userId);
+    public Trainee selectTraineeProfile(String username) {
+        log.debug("Selecting trainee profile: username={}", username);
+
+        return traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
     }
 
     @Transactional
-    public Trainee updateTraineeAddress(UUID userId, String newAddress) {
-        log.debug("Updating trainee address: userId={}", userId);
+    public Trainee updateTraineeAddress(String username, String newAddress) {
+        log.debug("Updating trainee address: username={}", username);
 
-        Trainee trainee = traineeRepository.findByUserId(userId)
+        Trainee trainee = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> {
-                    log.warn("Trainee not found: {}", userId);
-                    return new NotFoundException("Trainee not found for userId: " + userId);
+                    log.warn("Trainee not found: {}", username);
+                    return new NotFoundException("Trainee not found for username: " + username);
                 });
 
         trainee.setAddress(newAddress);
         Trainee saved = traineeRepository.save(trainee);
 
-        log.info("Trainee address updated: userId={}", userId);
+        log.info("Trainee address updated: username={}", username);
         return saved;
     }
 
     @Transactional
-    public void deleteTraineeProfile(UUID userId) {
-        log.info("Deleting trainee profile: userId={}", userId);
+    public void deleteTraineeProfile(String username) {
+        log.info("Deleting trainee profile: username={}", username);
 
-        Trainee trainee = traineeRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Trainee not found for userId: " + userId));
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
 
-        trainee.getTrainers().forEach(tr -> tr.getTrainees().remove(trainee));
-        trainee.getTrainers().clear();
+        for (Trainer existingTrainer : List.copyOf(trainee.getTrainers())) {
+            trainee.removeTrainer(existingTrainer);
+        }
+
         traineeRepository.delete(trainee);
-        userService.deleteUser(userId);
+        userService.deleteUser(trainee.getUser().getId());
     }
 
     @Transactional(readOnly = true)
@@ -120,29 +124,22 @@ public class TraineeService {
                                               LocalDateTime to,
                                               String trainerName,
                                               TrainingType type) {
-
-        return trainingRepository.findTraineeTrainings(
-                username,
-                from,
-                to,
-                trainerName,
-                type
-        );
+        return trainingRepository.findTraineeTrainings(username, from, to, trainerName, type);
     }
 
     @Transactional(readOnly = true)
     public List<Trainer> getNotAssignedTrainers(String traineeUsername) {
-
         return trainerRepository.findNotAssignedToTrainee(traineeUsername);
     }
 
     @Transactional
     public void updateTraineeTrainers(String traineeUsername, List<String> trainerUsernames) {
-
         Trainee trainee = traineeRepository.findByUserUsername(traineeUsername)
-                .orElseThrow(() -> new NotFoundException("Trainee not found"));
+                .orElseThrow(() -> new NotFoundException("Trainee not found: " + traineeUsername));
 
-        trainee.getTrainers().clear();
+        for (Trainer existingTrainer : List.copyOf(trainee.getTrainers())) {
+            trainee.removeTrainer(existingTrainer);
+        }
 
         for (String trainerUsername : trainerUsernames) {
             Trainer trainer = trainerRepository.findByUserUsername(trainerUsername)
@@ -150,5 +147,7 @@ public class TraineeService {
 
             trainee.addTrainer(trainer);
         }
+
+        traineeRepository.save(trainee);
     }
 }

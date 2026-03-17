@@ -16,10 +16,11 @@ public interface TrainingRepository extends JpaRepository<Training, UUID> {
         select t
         from Training t
         where t.trainee.user.username = :traineeUsername
-          and t.trainingDate >= :from
-          and t.trainingDate <= :to
+          and (:from is null or t.trainingDate >= :from)
+          and (:to is null or t.trainingDate <= :to)
           and (:trainerName is null
-               or lower(concat(t.trainer.user.firstName, ' ', t.trainer.user.lastName)) like lower(concat('%', :trainerName, '%')))
+               or lower(concat(t.trainer.user.firstName, ' ', t.trainer.user.lastName))
+                  like lower(concat('%', :trainerName, '%')))
           and (:trainingType is null or t.trainingType = :trainingType)
         order by t.trainingDate desc
     """)
@@ -35,10 +36,11 @@ public interface TrainingRepository extends JpaRepository<Training, UUID> {
         select t
         from Training t
         where t.trainer.user.username = :trainerUsername
-          and t.trainingDate >= :from
-          and t.trainingDate <= :to
+          and (:from is null or t.trainingDate >= :from)
+          and (:to is null or t.trainingDate <= :to)
           and (:traineeName is null
-               or lower(concat(t.trainee.user.firstName, ' ', t.trainee.user.lastName)) like lower(concat('%', :traineeName, '%')))
+               or lower(concat(t.trainee.user.firstName, ' ', t.trainee.user.lastName))
+                  like lower(concat('%', :traineeName, '%')))
         order by t.trainingDate desc
     """)
     List<Training> findTrainerTrainings(

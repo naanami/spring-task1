@@ -67,32 +67,60 @@ class TraineeServiceTest {
     }
 
     @Test
+    void selectTraineeProfileShouldReturnTraineeByUsername() {
+        Trainee trainee = mock(Trainee.class);
+        when(traineeRepository.findByUserUsername("Anna.Smith")).thenReturn(Optional.of(trainee));
+
+        Trainee result = traineeService.selectTraineeProfile("Anna.Smith");
+
+        assertSame(trainee, result);
+    }
+
+    @Test
     void updateTraineeAddressShouldUpdateAddress() {
         Trainee trainee = new Trainee(mock(User.class), LocalDate.of(2000, 1, 1), "Old");
-        when(traineeRepository.findByUserId(any())).thenReturn(Optional.of(trainee));
+        when(traineeRepository.findByUserUsername("Anna.Smith")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(any(Trainee.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainee updated = traineeService.updateTraineeAddress(UUID.randomUUID(), "New");
+        Trainee updated = traineeService.updateTraineeAddress("Anna.Smith", "New");
 
         assertEquals("New", updated.getAddress());
+    }
+
+    @Test
+    void updateTraineeAddressShouldThrowIfMissing() {
+        when(traineeRepository.findByUserUsername("Anna.Smith")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> traineeService.updateTraineeAddress("Anna.Smith", "New"));
     }
 
     @Test
     void deleteTraineeProfileShouldDeleteTraineeAndUser() {
         UUID userId = UUID.randomUUID();
 
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(userId);
+
         Trainer trainer = new Trainer(mock(User.class), TrainingType.YOGA);
-        Trainee trainee = new Trainee(mock(User.class), LocalDate.of(2000, 1, 1), "Addr");
+        Trainee trainee = new Trainee(user, LocalDate.of(2000, 1, 1), "Addr");
         trainee.addTrainer(trainer);
 
-        when(traineeRepository.findByUserId(userId)).thenReturn(Optional.of(trainee));
+        when(traineeRepository.findByUserUsername("Anna.Smith")).thenReturn(Optional.of(trainee));
 
-        traineeService.deleteTraineeProfile(userId);
+        traineeService.deleteTraineeProfile("Anna.Smith");
 
         verify(traineeRepository).delete(trainee);
         verify(userService).deleteUser(userId);
         assertTrue(trainee.getTrainers().isEmpty());
         assertFalse(trainer.getTrainees().contains(trainee));
+    }
+
+    @Test
+    void countTraineesShouldReturnRepositoryCount() {
+        when(traineeRepository.count()).thenReturn(2L);
+
+        assertEquals(2L, traineeService.countTrainees());
     }
 
     @Test
@@ -134,30 +162,6 @@ class TraineeServiceTest {
         traineeService.updateTraineeTrainers("Anna.Smith", List.of("John.Doe", "Mike.Jones"));
 
         assertEquals(2, trainee.getTrainers().size());
-    }
-
-    @Test
-    void updateTraineeAddressShouldThrowIfMissing() {
-        when(traineeRepository.findByUserId(any())).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class,
-                () -> traineeService.updateTraineeAddress(UUID.randomUUID(), "New"));
-    }
-    @Test
-    void countTraineesShouldReturnRepositoryCount() {
-        when(traineeRepository.count()).thenReturn(2L);
-        assertEquals(2L, traineeService.countTrainees());
-    }
-
-    @Test
-    void selectTraineeProfileShouldDelegateToRepository() {
-        UUID id = UUID.randomUUID();
-        Trainee trainee = mock(Trainee.class);
-        when(traineeRepository.findByUserId(id)).thenReturn(Optional.of(trainee));
-
-        Optional<Trainee> result = traineeService.selectTraineeProfile(id);
-
-        assertTrue(result.isPresent());
-        assertSame(trainee, result.get());
+        verify(traineeRepository).save(trainee);
     }
 }

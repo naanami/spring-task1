@@ -2,13 +2,14 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.dto.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainer;
+import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TrainerService;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 public class TrainerFacade {
@@ -21,25 +22,22 @@ public class TrainerFacade {
         this.authService = authService;
     }
 
-    public GeneratedCredentials createTrainerProfile(
-            String firstName,
-            String lastName,
-            TrainingType specialization
-    ) {
+    public GeneratedCredentials createTrainerProfile(String firstName,
+                                                     String lastName,
+                                                     TrainingType specialization) {
         return trainerService.createTrainerProfile(firstName, lastName, specialization);
     }
 
-    public Optional<Trainer> selectTrainerProfile(String username, String password, UUID userId) {
+    public Trainer selectTrainerProfile(String username, String password) {
         authService.authenticate(username, password);
-        return trainerService.selectTrainerProfile(userId);
+        return trainerService.selectTrainerProfile(username);
     }
 
     public Trainer updateTrainerProfile(String username,
                                         String password,
-                                        UUID userId,
                                         TrainingType newSpecialization) {
         authService.authenticate(username, password);
-        return trainerService.updateTrainerProfile(userId, newSpecialization);
+        return trainerService.updateTrainerProfile(username, newSpecialization);
     }
 
     public long countTrainers(String username, String password) {
@@ -50,5 +48,14 @@ public class TrainerFacade {
     public void deleteAllTrainers(String username, String password) {
         authService.authenticate(username, password);
         trainerService.deleteAllTrainers();
+    }
+
+    public List<Training> getTrainerTrainings(String username,
+                                              String password,
+                                              LocalDateTime from,
+                                              LocalDateTime to,
+                                              String traineeName) {
+        authService.authenticate(username, password);
+        return trainerService.getTrainerTrainings(username, from, to, traineeName);
     }
 }
