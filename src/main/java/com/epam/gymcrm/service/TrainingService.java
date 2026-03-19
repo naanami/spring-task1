@@ -97,4 +97,32 @@ public class TrainingService {
     public void deleteAllTrainings() {
         trainingRepository.deleteAll();
     }
+
+    @Transactional
+    public void createTraining(String traineeUsername,
+                               String trainerUsername,
+                               String trainingName,
+                               TrainingType trainingType,
+                               LocalDateTime trainingDate,
+                               Integer duration) {
+
+        validateDuration(duration);
+
+        Trainee trainee = traineeRepository.findByUserUsername(traineeUsername)
+                .orElseThrow(() -> new NotFoundException("Trainee not found: " + traineeUsername));
+
+        Trainer trainer = trainerRepository.findByUserUsername(trainerUsername)
+                .orElseThrow(() -> new NotFoundException("Trainer not found: " + trainerUsername));
+
+        Training training = new Training(
+                trainee,
+                trainer,
+                trainingName,
+                trainingType,
+                trainingDate,
+                duration
+        );
+
+        trainingRepository.save(training);
+    }
 }

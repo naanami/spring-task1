@@ -160,13 +160,15 @@ class TrainingRepositoryTest {
     }
 
     @Test
-    void findNotAssignedToTraineeShouldReturnUnassignedTrainers() {
+    void findNotAssignedToTraineeShouldReturnOnlyUnassignedActiveTrainers() {
         User trainerUser1 = userRepository.save(new User("John", "Doe", "John.Doe", "pass", true));
         User trainerUser2 = userRepository.save(new User("Mike", "Jones", "Mike.Jones", "pass", true));
+        User trainerUser3 = userRepository.save(new User("Inactive", "Trainer", "Inactive.Trainer", "pass", false));
         User traineeUser = userRepository.save(new User("Anna", "Smith", "Anna.Smith", "pass", true));
 
         Trainer trainer1 = trainerRepository.save(new Trainer(trainerUser1, TrainingType.YOGA));
         Trainer trainer2 = trainerRepository.save(new Trainer(trainerUser2, TrainingType.CARDIO));
+        Trainer inactiveTrainer = trainerRepository.save(new Trainer(trainerUser3, TrainingType.CARDIO));
         Trainee trainee = traineeRepository.save(new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr"));
 
         trainee.addTrainer(trainer1);
@@ -178,6 +180,6 @@ class TrainingRepositoryTest {
         List<Trainer> result = trainerRepository.findNotAssignedToTrainee("Anna.Smith");
 
         assertEquals(1, result.size());
-        assertEquals(TrainingType.CARDIO, result.get(0).getSpecialization());
+        assertEquals("Mike.Jones", result.get(0).getUser().getUsername());
     }
 }

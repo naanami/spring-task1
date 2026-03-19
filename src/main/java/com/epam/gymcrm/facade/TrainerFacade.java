@@ -1,6 +1,9 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.TraineeSummaryResponse;
+import com.epam.gymcrm.dto.response.TrainerProfileResponse;
+import com.epam.gymcrm.dto.response.TrainerTrainingResponse;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
@@ -33,13 +36,6 @@ public class TrainerFacade {
         return trainerService.selectTrainerProfile(username);
     }
 
-    public Trainer updateTrainerProfile(String username,
-                                        String password,
-                                        TrainingType newSpecialization) {
-        authService.authenticate(username, password);
-        return trainerService.updateTrainerProfile(username, newSpecialization);
-    }
-
     public long countTrainers(String username, String password) {
         authService.authenticate(username, password);
         return trainerService.countTrainers();
@@ -57,5 +53,65 @@ public class TrainerFacade {
                                               String traineeName) {
         authService.authenticate(username, password);
         return trainerService.getTrainerTrainings(username, from, to, traineeName);
+    }
+
+    public TrainerProfileResponse getTrainerProfile(String username, String password) {
+        Trainer trainer = selectTrainerProfile(username, password);
+        return mapToResponse(trainer);
+    }
+
+    public TrainerProfileResponse updateTrainerProfile(String username,
+                                                       String password,
+                                                       String firstName,
+                                                       String lastName,
+                                                       Boolean active) {
+        authService.authenticate(username, password);
+
+        Trainer trainer = trainerService.updateTrainerProfile(
+                username,
+                firstName,
+                lastName,
+                active
+        );
+
+        return mapToResponse(trainer);
+    }
+
+    public List<TrainerTrainingResponse> getTrainerTrainingResponses(String username,
+                                                                     String password,
+                                                                     LocalDateTime from,
+                                                                     LocalDateTime to,
+                                                                     String traineeName) {
+        return getTrainerTrainings(username, password, from, to, traineeName)
+                .stream()
+                .map(training -> new TrainerTrainingResponse(
+                        training.getTrainingName(),
+                        training.getTrainingDate(),
+                        training.getTrainingType(),
+                        training.getTrainingDuration(),
+                        training.getTrainee().getUser().getFirstName() + " " +
+                                training.getTrainee().getUser().getLastName()
+                ))
+                .toList();
+    }
+
+    private TrainerProfileResponse mapToResponse(Trainer trainer) {
+        List<TraineeSummaryResponse> trainees = trainer.getTrainees()
+                .stream()
+                .map(trainee -> new TraineeSummaryResponse(
+                        trainee.getUser().getUsername(),
+                        trainee.getUser().getFirstName(),
+                        trainee.getUser().getLastName()
+                ))
+                .toList();
+
+        return new TrainerProfileResponse(
+                trainer.getUser().getUsername(),
+                trainer.getUser().getFirstName(),
+                trainer.getUser().getLastName(),
+                trainer.getSpecialization(),
+                trainer.getUser().isActive(),
+                trainees
+        );
     }
 }

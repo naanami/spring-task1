@@ -1,6 +1,6 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
@@ -64,17 +64,6 @@ public class TrainerService {
                 .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
     }
 
-    @Transactional
-    public Trainer updateTrainerProfile(String username, TrainingType newSpecialization) {
-        log.info("Updating trainer specialization: username={}, newSpecialization={}", username, newSpecialization);
-
-        Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
-
-        trainer.setSpecialization(newSpecialization);
-        return trainerRepository.save(trainer);
-    }
-
     @Transactional(readOnly = true)
     public long countTrainers() {
         return trainerRepository.count();
@@ -96,5 +85,23 @@ public class TrainerService {
                                               LocalDateTime to,
                                               String traineeName) {
         return trainingRepository.findTrainerTrainings(username, from, to, traineeName);
+    }
+
+    @Transactional
+    public Trainer updateTrainerProfile(String username,
+                                        String firstName,
+                                        String lastName,
+                                        Boolean active) {
+        log.info("Updating trainer profile: username={}", username);
+
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
+
+        User user = trainer.getUser();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setActive(active);
+
+        return trainerRepository.save(trainer);
     }
 }

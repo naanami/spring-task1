@@ -1,6 +1,6 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
@@ -149,5 +149,34 @@ public class TraineeService {
         }
 
         traineeRepository.save(trainee);
+    }
+
+    @Transactional
+    public Trainee updateTraineeProfile(String username,
+                                        String firstName,
+                                        String lastName,
+                                        LocalDate dateOfBirth,
+                                        String address,
+                                        Boolean active) {
+        log.debug("Updating trainee profile: username={}", username);
+
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> {
+                    log.warn("Trainee not found: {}", username);
+                    return new NotFoundException("Trainee not found for username: " + username);
+                });
+
+        User user = trainee.getUser();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setActive(active);
+
+        trainee.setDateOfBirth(dateOfBirth);
+        trainee.setAddress(address);
+
+        Trainee saved = traineeRepository.save(trainee);
+
+        log.info("Trainee profile updated: username={}", username);
+        return saved;
     }
 }

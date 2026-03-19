@@ -22,20 +22,20 @@ public class TrainingFacade {
         this.authService = authService;
     }
 
-    public Training createTraining(String username,
-                                   String password,
-                                   UUID traineeId,
-                                   UUID trainerId,
-                                   String trainingName,
-                                   TrainingType trainingType,
-                                   LocalDateTime trainingDate,
-                                   int trainingDuration) {
+    public void createTraining(String username,
+                               String password,
+                               String traineeUsername,
+                               String trainerUsername,
+                               String trainingName,
+                               TrainingType trainingType,
+                               LocalDateTime trainingDate,
+                               int trainingDuration) {
 
         authService.authenticate(username, password);
 
-        return trainingService.createTraining(
-                traineeId,
-                trainerId,
+        trainingService.createTraining(
+                traineeUsername,
+                trainerUsername,
                 trainingName,
                 trainingType,
                 trainingDate,

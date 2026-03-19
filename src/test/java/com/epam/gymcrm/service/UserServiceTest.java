@@ -1,6 +1,6 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.util.CredentialsGenerator;
@@ -74,6 +74,26 @@ class UserServiceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> userService.changePassword("John.Doe", "wrongPass", "newPass"));
+    }
+
+    @Test
+    void activateUserShouldSetActiveTrue() {
+        User user = new User("John", "Doe", "John.Doe", "pass", false);
+        when(userRepository.findByUsername("John.Doe")).thenReturn(Optional.of(user));
+
+        userService.activateUser("John.Doe");
+
+        assertTrue(user.isActive());
+    }
+
+    @Test
+    void deactivateUserShouldSetActiveFalse() {
+        User user = new User("John", "Doe", "John.Doe", "pass", true);
+        when(userRepository.findByUsername("John.Doe")).thenReturn(Optional.of(user));
+
+        userService.deactivateUser("John.Doe");
+
+        assertFalse(user.isActive());
     }
 
     @Test

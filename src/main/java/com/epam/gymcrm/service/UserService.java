@@ -1,7 +1,8 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.User;
+import com.epam.gymcrm.exception.NotFoundException;
 import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.util.CredentialsGenerator;
 import org.slf4j.Logger;
@@ -33,7 +34,6 @@ public class UserService {
         String password = credentialsGenerator.generatePassword();
 
         User user = new User(firstName, lastName, username, password, true);
-
         User saved = userRepository.save(user);
 
         log.info("User registered: id={}, username={}", saved.getId(), username);
@@ -53,9 +53,8 @@ public class UserService {
 
     @Transactional
     public void changePassword(String username, String oldPassword, String newPassword) {
-
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
 
         if (!user.getPassword().equals(oldPassword)) {
             throw new IllegalArgumentException("Invalid password");
@@ -66,10 +65,25 @@ public class UserService {
 
     @Transactional
     public void toggleActive(String username) {
-
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
 
         user.setActive(!user.isActive());
+    }
+
+    @Transactional
+    public void activateUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+
+        user.setActive(true);
+    }
+
+    @Transactional
+    public void deactivateUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+
+        user.setActive(false);
     }
 }

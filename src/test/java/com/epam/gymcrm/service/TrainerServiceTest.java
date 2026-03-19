@@ -1,6 +1,6 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
@@ -70,16 +70,19 @@ class TrainerServiceTest {
     }
 
     @Test
-    void updateTrainerProfileShouldUpdateSpecialization() {
+    void updateTrainerProfileShouldUpdateNamesAndActive() {
         User user = new User("John", "Doe", "John.Doe", "secret", true);
         Trainer trainer = new Trainer(user, TrainingType.CARDIO);
 
         when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainer));
         when(trainerRepository.save(any(Trainer.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainer updated = trainerService.updateTrainerProfile("John.Doe", TrainingType.YOGA);
+        Trainer updated = trainerService.updateTrainerProfile("John.Doe", "Mike", "Jones", false);
 
-        assertEquals(TrainingType.YOGA, updated.getSpecialization());
+        assertEquals("Mike", updated.getUser().getFirstName());
+        assertEquals("Jones", updated.getUser().getLastName());
+        assertFalse(updated.getUser().isActive());
+        assertEquals(TrainingType.CARDIO, updated.getSpecialization());
     }
 
     @Test
@@ -87,7 +90,7 @@ class TrainerServiceTest {
         when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> trainerService.updateTrainerProfile("John.Doe", TrainingType.YOGA));
+                () -> trainerService.updateTrainerProfile("John.Doe", "Mike", "Jones", true));
     }
 
     @Test

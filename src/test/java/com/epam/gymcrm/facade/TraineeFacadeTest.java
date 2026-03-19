@@ -1,6 +1,7 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.TrainerSummaryResponse;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
@@ -15,8 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class TraineeFacadeTest {
@@ -158,17 +158,29 @@ class TraineeFacadeTest {
     }
 
     @Test
-    void updateTraineeTrainersShouldAuthenticateThenDelegate() {
+    void updateTraineeTrainersShouldAuthenticateThenDelegateAndReturnSummaries() {
         TraineeService service = mock(TraineeService.class);
         AuthService authService = mock(AuthService.class);
         TraineeFacade facade = new TraineeFacade(service, authService);
 
-        List<String> trainerUsernames = List.of("John.Doe", "Mike.Jones");
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
+        User traineeUser = new User("Anna", "Smith", "anna.smith", "pass", true);
+        Trainee trainee = new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr");
 
-        facade.updateTraineeTrainers("user", "pass", trainerUsernames);
+        User trainerUser = new User("John", "Doe", "john.doe", "pass", true);
+        Trainer trainer = new Trainer(trainerUser, TrainingType.YOGA);
+        trainee.addTrainer(trainer);
+
+        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
+        when(service.selectTraineeProfile("user")).thenReturn(trainee);
+
+        List<TrainerSummaryResponse> result =
+                facade.updateTraineeTrainers("user", "pass", List.of("john.doe"));
+
+        assertEquals(1, result.size());
+        assertEquals("john.doe", result.get(0).getUsername());
 
         verify(authService).authenticate("user", "pass");
-        verify(service).updateTraineeTrainers("user", trainerUsernames);
+        verify(service).updateTraineeTrainers("user", List.of("john.doe"));
+        verify(service).selectTraineeProfile("user");
     }
 }

@@ -1,6 +1,6 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.dto.GeneratedCredentials;
+import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
@@ -13,8 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class TrainerFacadeTest {
@@ -51,23 +50,6 @@ class TrainerFacadeTest {
         assertSame(expected, actual);
         verify(authService).authenticate("user", "pass");
         verify(service).selectTrainerProfile("user");
-    }
-
-    @Test
-    void updateTrainerProfileShouldAuthenticateThenDelegate() {
-        TrainerService service = mock(TrainerService.class);
-        AuthService authService = mock(AuthService.class);
-        TrainerFacade facade = new TrainerFacade(service, authService);
-
-        Trainer trainer = mock(Trainer.class);
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
-        when(service.updateTrainerProfile("user", TrainingType.YOGA)).thenReturn(trainer);
-
-        Trainer actual = facade.updateTrainerProfile("user", "pass", TrainingType.YOGA);
-
-        assertSame(trainer, actual);
-        verify(authService).authenticate("user", "pass");
-        verify(service).updateTrainerProfile("user", TrainingType.YOGA);
     }
 
     @Test

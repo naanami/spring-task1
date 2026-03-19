@@ -12,8 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class TrainingFacadeTest {
@@ -24,23 +23,16 @@ class TrainingFacadeTest {
         AuthService authService = mock(AuthService.class);
         TrainingFacade facade = new TrainingFacade(service, authService);
 
-        UUID traineeId = UUID.randomUUID();
-        UUID trainerId = UUID.randomUUID();
         LocalDateTime dt = LocalDateTime.of(2026, 1, 1, 10, 0);
 
-        Training expected = mock(Training.class);
-
         when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
-        when(service.createTraining(traineeId, trainerId, "Name", TrainingType.CARDIO, dt, 60))
-                .thenReturn(expected);
 
-        Training actual = facade.createTraining(
-                "user", "pass", traineeId, trainerId, "Name", TrainingType.CARDIO, dt, 60
+        facade.createTraining(
+                "user", "pass", "anna.smith", "john.doe", "Name", TrainingType.CARDIO, dt, 60
         );
 
-        assertSame(expected, actual);
         verify(authService).authenticate("user", "pass");
-        verify(service).createTraining(traineeId, trainerId, "Name", TrainingType.CARDIO, dt, 60);
+        verify(service).createTraining("anna.smith", "john.doe", "Name", TrainingType.CARDIO, dt, 60);
     }
 
     @Test
@@ -93,6 +85,7 @@ class TrainingFacadeTest {
         verify(authService).authenticate("user", "pass");
         verify(service).selectAllTrainings();
     }
+
     @Test
     void deleteAllTrainingsShouldAuthenticateThenDelegate() {
         TrainingService service = mock(TrainingService.class);
