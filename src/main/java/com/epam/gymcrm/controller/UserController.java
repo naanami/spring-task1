@@ -48,20 +48,11 @@ public class UserController {
     }
 
     @PatchMapping("/{username}/activation")
-    @ApiOperation("Activate or deactivate user")
-    public String updateActivation(
-            @ApiParam(value = "Username", required = true)
+    public String toggleActivation(
             @PathVariable String username,
-            @ApiParam(value = "Password", required = true)
-            @RequestParam String password,
-            @Valid @RequestBody ActivationRequest request
+            @RequestParam String password
     ) {
-        if (Boolean.TRUE.equals(request.getIsActive())) {
-            userFacade.activateUser(username, password);
-            return "User activated";
-        }
-
-        userFacade.deactivateUser(username, password);
-        return "User deactivated";
+        userFacade.toggleUserActivation(username, password);
+        return "User activation status changed successfully";
     }
 }

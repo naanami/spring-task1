@@ -51,6 +51,11 @@ public class TraineeService {
                                                      String address) {
         log.debug("Creating trainee profile for {} {}", firstName, lastName);
 
+        if (trainerRepository.existsByUserFirstNameAndUserLastName(firstName, lastName)) {
+            log.warn("Cannot create trainee profile because trainer profile already exists for {} {}", firstName, lastName);
+            throw new IllegalArgumentException("User cannot be registered as both trainer and trainee");
+        }
+
         GeneratedCredentials creds = userService.registerUser(firstName, lastName);
 
         User user = userRepository.findById(creds.getUserId())
@@ -67,7 +72,7 @@ public class TraineeService {
     public Trainee selectTraineeProfile(String username) {
         log.debug("Selecting trainee profile: username={}", username);
 
-        return traineeRepository.findByUserUsername(username)
+        return traineeRepository.findDetailedByUserUsername(username)
                 .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
     }
 
@@ -174,9 +179,11 @@ public class TraineeService {
         trainee.setDateOfBirth(dateOfBirth);
         trainee.setAddress(address);
 
-        Trainee saved = traineeRepository.save(trainee);
+        traineeRepository.save(trainee);
 
         log.info("Trainee profile updated: username={}", username);
-        return saved;
+
+        return traineeRepository.findDetailedByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
     }
 }

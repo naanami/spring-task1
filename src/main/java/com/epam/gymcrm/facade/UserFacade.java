@@ -15,13 +15,8 @@ public class UserFacade {
         this.authService = authService;
     }
 
-    public void activateUser(String username, String password) {
+    public void toggleUserActivation(String username, String password) {
         authService.authenticate(username, password);
-        userService.activateUser(username);
-    }
-
-    public void deactivateUser(String username, String password) {
-        authService.authenticate(username, password);
-        userService.deactivateUser(username);
+        userService.toggleActive(username);
     }
 }

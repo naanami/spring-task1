@@ -10,9 +10,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -65,34 +65,12 @@ class UserControllerTest {
     }
 
     @Test
-    void activationShouldActivateUser() throws Exception {
+    void toggleActivationShouldReturnSuccess() throws Exception {
         mockMvc.perform(patch("/api/users/john.doe/activation")
-                        .param("password", "secret")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "isActive": true
-                                }
-                                """))
+                        .param("password", "secret"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("User activated"));
+                .andExpect(content().string("User activation status changed successfully"));
 
-        verify(userFacade).activateUser("john.doe", "secret");
-    }
-
-    @Test
-    void activationShouldDeactivateUser() throws Exception {
-        mockMvc.perform(patch("/api/users/john.doe/activation")
-                        .param("password", "secret")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "isActive": false
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(content().string("User deactivated"));
-
-        verify(userFacade).deactivateUser("john.doe", "secret");
+        verify(userFacade).toggleUserActivation("john.doe", "secret");
     }
 }

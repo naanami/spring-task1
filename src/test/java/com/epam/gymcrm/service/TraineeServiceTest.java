@@ -55,6 +55,7 @@ class TraineeServiceTest {
         GeneratedCredentials creds = new GeneratedCredentials(userId, "Anna.Smith", "secret");
         User user = new User("Anna", "Smith", "Anna.Smith", "secret", true);
 
+        when(trainerRepository.existsByUserFirstNameAndUserLastName("Anna", "Smith")).thenReturn(false);
         when(userService.registerUser("Anna", "Smith")).thenReturn(creds);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -64,6 +65,19 @@ class TraineeServiceTest {
 
         assertEquals(creds, result);
         verify(traineeRepository).save(any(Trainee.class));
+    }
+
+    @Test
+    void createTraineeProfileShouldThrowWhenTrainerAlreadyExists() {
+        when(trainerRepository.existsByUserFirstNameAndUserLastName("Anna", "Smith")).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> traineeService.createTraineeProfile("Anna", "Smith", LocalDate.of(2000, 1, 1), "Yerevan")
+        );
+
+        assertEquals("User cannot be registered as both trainer and trainee", ex.getMessage());
+        verify(userService, never()).registerUser(anyString(), anyString());
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.User;
+import com.epam.gymcrm.exception.NotFoundException;
 import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.util.CredentialsGenerator;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,23 +78,11 @@ class UserServiceTest {
     }
 
     @Test
-    void activateUserShouldSetActiveTrue() {
-        User user = new User("John", "Doe", "John.Doe", "pass", false);
-        when(userRepository.findByUsername("John.Doe")).thenReturn(Optional.of(user));
+    void changePasswordShouldThrowWhenUserMissing() {
+        when(userRepository.findByUsername("John.Doe")).thenReturn(Optional.empty());
 
-        userService.activateUser("John.Doe");
-
-        assertTrue(user.isActive());
-    }
-
-    @Test
-    void deactivateUserShouldSetActiveFalse() {
-        User user = new User("John", "Doe", "John.Doe", "pass", true);
-        when(userRepository.findByUsername("John.Doe")).thenReturn(Optional.of(user));
-
-        userService.deactivateUser("John.Doe");
-
-        assertFalse(user.isActive());
+        assertThrows(NotFoundException.class,
+                () -> userService.changePassword("John.Doe", "oldPass", "newPass"));
     }
 
     @Test
@@ -106,6 +95,14 @@ class UserServiceTest {
 
         userService.toggleActive("John.Doe");
         assertTrue(user.isActive());
+    }
+
+    @Test
+    void toggleActiveShouldThrowWhenUserMissing() {
+        when(userRepository.findByUsername("John.Doe")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> userService.toggleActive("John.Doe"));
     }
 
     @Test

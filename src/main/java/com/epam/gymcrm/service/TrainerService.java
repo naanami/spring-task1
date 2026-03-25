@@ -6,6 +6,7 @@ import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.exception.NotFoundException;
+import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.UserRepository;
@@ -27,15 +28,17 @@ public class TrainerService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final TrainerRepository trainerRepository;
+    private final TraineeRepository traineeRepository;
 
     public TrainerService(UserService userService,
                           UserRepository userRepository,
                           TrainerRepository trainerRepository,
-                          TrainingRepository trainingRepository) {
+                          TrainingRepository trainingRepository, TraineeRepository traineeRepository) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.trainerRepository = trainerRepository;
         this.trainingRepository = trainingRepository;
+        this.traineeRepository = traineeRepository;
     }
 
     @Transactional
@@ -43,6 +46,11 @@ public class TrainerService {
                                                      String lastName,
                                                      TrainingType specialization) {
         log.debug("Creating trainer profile for {} {}", firstName, lastName);
+
+        if (traineeRepository.existsByUserFirstNameAndUserLastName(firstName, lastName)) {
+            log.warn("Cannot create trainer profile because trainee profile already exists for {} {}", firstName, lastName);
+            throw new IllegalArgumentException("User cannot be registered as both trainer and trainee");
+        }
 
         GeneratedCredentials creds = userService.registerUser(firstName, lastName);
 
@@ -60,7 +68,7 @@ public class TrainerService {
     public Trainer selectTrainerProfile(String username) {
         log.debug("Selecting trainer profile: username={}", username);
 
-        return trainerRepository.findByUserUsername(username)
+        return trainerRepository.findDetailedByUserUsername(username)
                 .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
     }
 
@@ -102,6 +110,9 @@ public class TrainerService {
         user.setLastName(lastName);
         user.setActive(active);
 
-        return trainerRepository.save(trainer);
+        userRepository.save(user);
+
+        return trainerRepository.findDetailedByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainer not found for username: " + username));
     }
 }

@@ -1,6 +1,7 @@
 package com.epam.gymcrm.repository;
 
 import com.epam.gymcrm.entity.Trainer;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,13 @@ public interface TrainerRepository extends JpaRepository<Trainer, Long> {
 
     Optional<Trainer> findByUserUsername(String username);
 
+    boolean existsByUserFirstNameAndUserLastName(String firstName, String lastName);
+
+    @EntityGraph(attributePaths = {"user", "trainees", "trainees.user"})
+    Optional<Trainer> findDetailedByUserUsername(String username);
+
+
+    @EntityGraph(attributePaths = {"user"})
     @Query("""
     select tr
     from Trainer tr

@@ -1,6 +1,13 @@
 package com.epam.gymcrm.dto;
 
-import com.epam.gymcrm.dto.request.*;
+import com.epam.gymcrm.dto.request.ChangePasswordRequest;
+import com.epam.gymcrm.dto.request.CreateTrainingRequest;
+import com.epam.gymcrm.dto.request.LoginRequest;
+import com.epam.gymcrm.dto.request.TraineeRegistrationRequest;
+import com.epam.gymcrm.dto.request.TrainerRegistrationRequest;
+import com.epam.gymcrm.dto.request.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.request.UpdateTraineeTrainersRequest;
+import com.epam.gymcrm.dto.request.UpdateTrainerRequest;
 import com.epam.gymcrm.dto.response.ErrorResponse;
 import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.dto.response.TraineeSummaryResponse;
@@ -171,15 +178,6 @@ class DtoContractTest {
             assertEquals("John", response.getFirstName());
             assertEquals("Doe", response.getLastName());
             assertEquals(TrainingType.YOGA, response.getSpecialization());
-        }
-
-        @Test
-        void shouldRepresentActivationInput() {
-            ActivationRequest request = new ActivationRequest();
-
-            request.setIsActive(true);
-
-            assertTrue(request.getIsActive());
         }
 
         @Test

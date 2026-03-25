@@ -6,6 +6,7 @@ import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.entity.User;
 import com.epam.gymcrm.exception.NotFoundException;
+import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.UserRepository;
@@ -26,6 +27,7 @@ class TrainerServiceTest {
     private UserRepository userRepository;
     private TrainerRepository trainerRepository;
     private TrainingRepository trainingRepository;
+    private TraineeRepository traineeRepository;
     private TrainerService trainerService;
 
     @BeforeEach
@@ -34,12 +36,14 @@ class TrainerServiceTest {
         userRepository = mock(UserRepository.class);
         trainerRepository = mock(TrainerRepository.class);
         trainingRepository = mock(TrainingRepository.class);
+        traineeRepository = mock(TraineeRepository.class);
 
         trainerService = new TrainerService(
                 userService,
                 userRepository,
                 trainerRepository,
-                trainingRepository
+                trainingRepository,
+                traineeRepository
         );
     }
 
@@ -49,6 +53,7 @@ class TrainerServiceTest {
         GeneratedCredentials creds = new GeneratedCredentials(userId, "John.Doe", "secret");
         User user = new User("John", "Doe", "John.Doe", "secret", true);
 
+        when(traineeRepository.existsByUserFirstNameAndUserLastName("John", "Doe")).thenReturn(false);
         when(userService.registerUser("John", "Doe")).thenReturn(creds);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -57,6 +62,19 @@ class TrainerServiceTest {
 
         assertEquals(creds, result);
         verify(trainerRepository).save(any(Trainer.class));
+    }
+
+    @Test
+    void createTrainerProfileShouldThrowWhenTraineeAlreadyExists() {
+        when(traineeRepository.existsByUserFirstNameAndUserLastName("John", "Doe")).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> trainerService.createTrainerProfile("John", "Doe", TrainingType.YOGA)
+        );
+
+        assertEquals("User cannot be registered as both trainer and trainee", ex.getMessage());
+        verify(userService, never()).registerUser(anyString(), anyString());
     }
 
     @Test

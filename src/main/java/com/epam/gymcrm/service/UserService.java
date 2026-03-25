@@ -70,20 +70,4 @@ public class UserService {
 
         user.setActive(!user.isActive());
     }
-
-    @Transactional
-    public void activateUser(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found: " + username));
-
-        user.setActive(true);
-    }
-
-    @Transactional
-    public void deactivateUser(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found: " + username));
-
-        user.setActive(false);
-    }
 }
