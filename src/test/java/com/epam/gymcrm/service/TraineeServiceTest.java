@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import io.micrometer.core.instrument.MeterRegistry;
 
 class TraineeServiceTest {
 
@@ -31,9 +32,11 @@ class TraineeServiceTest {
     private TrainerRepository trainerRepository;
     private TrainingRepository trainingRepository;
     private TraineeService traineeService;
+    private MeterRegistry meterRegistry;
 
     @BeforeEach
     void setUp() {
+        meterRegistry = mock(MeterRegistry.class);
         traineeRepository = mock(TraineeRepository.class);
         userRepository = mock(UserRepository.class);
         userService = mock(UserService.class);
@@ -45,7 +48,8 @@ class TraineeServiceTest {
                 userRepository,
                 userService,
                 trainerRepository,
-                trainingRepository
+                trainingRepository,
+                meterRegistry
         );
     }
 
@@ -83,7 +87,8 @@ class TraineeServiceTest {
     @Test
     void selectTraineeProfileShouldReturnTraineeByUsername() {
         Trainee trainee = mock(Trainee.class);
-        when(traineeRepository.findByUserUsername("Anna.Smith")).thenReturn(Optional.of(trainee));
+        when(traineeRepository.findDetailedByUserUsername("Anna.Smith"))
+                .thenReturn(Optional.of(trainee));
 
         Trainee result = traineeService.selectTraineeProfile("Anna.Smith");
 

@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @Service
 public class TraineeService {
@@ -32,16 +33,19 @@ public class TraineeService {
     private final TrainerRepository trainerRepository;
     private final TrainingRepository trainingRepository;
 
+
     public TraineeService(TraineeRepository traineeRepository,
                           UserRepository userRepository,
                           UserService userService,
                           TrainerRepository trainerRepository,
-                          TrainingRepository trainingRepository) {
+                          TrainingRepository trainingRepository,
+                          MeterRegistry meterRegistry) {
         this.traineeRepository = traineeRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.trainerRepository = trainerRepository;
         this.trainingRepository = trainingRepository;
+        meterRegistry.gauge("trainees.count", this, service -> service.countTrainees());
     }
 
     @Transactional

@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
 
 @Service
 public class TrainingService {
@@ -26,13 +28,15 @@ public class TrainingService {
     private final TrainingRepository trainingRepository;
     private final TraineeRepository traineeRepository;
     private final TrainerRepository trainerRepository;
+    private final Counter trainingCreatedCounter;
 
     public TrainingService(TrainingRepository trainingRepository,
                            TraineeRepository traineeRepository,
-                           TrainerRepository trainerRepository) {
+                           TrainerRepository trainerRepository, MeterRegistry meterRegistry) {
         this.trainingRepository = trainingRepository;
         this.traineeRepository = traineeRepository;
         this.trainerRepository = trainerRepository;
+        this.trainingCreatedCounter = meterRegistry.counter("trainings.created");
     }
 
     @Transactional
@@ -124,5 +128,7 @@ public class TrainingService {
         );
 
         trainingRepository.save(training);
+        trainingCreatedCounter.increment();
     }
+
 }

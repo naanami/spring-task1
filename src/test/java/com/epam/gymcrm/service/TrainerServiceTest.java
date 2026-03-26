@@ -80,7 +80,8 @@ class TrainerServiceTest {
     @Test
     void selectTrainerProfileShouldReturnTrainerByUsername() {
         Trainer trainer = mock(Trainer.class);
-        when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainer));
+        when(trainerRepository.findDetailedByUserUsername("John.Doe"))
+                .thenReturn(Optional.of(trainer));
 
         Trainer result = trainerService.selectTrainerProfile("John.Doe");
 
@@ -92,8 +93,12 @@ class TrainerServiceTest {
         User user = new User("John", "Doe", "John.Doe", "secret", true);
         Trainer trainer = new Trainer(user, TrainingType.CARDIO);
 
-        when(trainerRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainer));
-        when(trainerRepository.save(any(Trainer.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(trainerRepository.findByUserUsername("John.Doe"))
+                .thenReturn(Optional.of(trainer));
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(trainerRepository.findDetailedByUserUsername("John.Doe"))
+                .thenReturn(Optional.of(trainer));
 
         Trainer updated = trainerService.updateTrainerProfile("John.Doe", "Mike", "Jones", false);
 
