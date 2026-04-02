@@ -7,7 +7,6 @@ import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.entity.User;
-import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TraineeService;
 import org.junit.jupiter.api.Test;
 
@@ -22,10 +21,9 @@ import static org.mockito.Mockito.*;
 class TraineeFacadeTest {
 
     @Test
-    void createTraineeProfileShouldDelegateWithoutAuth() {
+    void createTraineeProfileShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         LocalDate dob = LocalDate.of(2000, 1, 1);
         GeneratedCredentials expected =
@@ -36,132 +34,107 @@ class TraineeFacadeTest {
 
         assertSame(expected, actual);
         verify(service).createTraineeProfile("A", "B", dob, "Addr");
-        verifyNoInteractions(authService);
     }
 
     @Test
-    void selectTraineeProfileShouldAuthenticateThenDelegate() {
+    void selectTraineeProfileShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         Trainee trainee = mock(Trainee.class);
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
         when(service.selectTraineeProfile("user")).thenReturn(trainee);
 
-        Trainee result = facade.selectTraineeProfile("user", "pass");
+        Trainee result = facade.selectTraineeProfile("user");
 
         assertSame(trainee, result);
-        verify(authService).authenticate("user", "pass");
         verify(service).selectTraineeProfile("user");
     }
 
     @Test
-    void updateTraineeAddressShouldAuthenticateThenDelegate() {
+    void updateTraineeAddressShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         Trainee trainee = mock(Trainee.class);
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
         when(service.updateTraineeAddress("user", "New")).thenReturn(trainee);
 
-        Trainee result = facade.updateTraineeAddress("user", "pass", "New");
+        Trainee result = facade.updateTraineeAddress("user", "New");
 
         assertSame(trainee, result);
-        verify(authService).authenticate("user", "pass");
         verify(service).updateTraineeAddress("user", "New");
     }
 
     @Test
-    void deleteTraineeProfileShouldAuthenticateThenDelegate() {
+    void deleteTraineeProfileShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
+        facade.deleteTraineeProfile("user");
 
-        facade.deleteTraineeProfile("user", "pass");
-
-        verify(authService).authenticate("user", "pass");
         verify(service).deleteTraineeProfile("user");
     }
 
     @Test
-    void countTraineesShouldAuthenticateThenDelegate() {
+    void countTraineesShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
         when(service.countTrainees()).thenReturn(2L);
 
-        long result = facade.countTrainees("user", "pass");
+        long result = facade.countTrainees();
 
         assertEquals(2L, result);
-        verify(authService).authenticate("user", "pass");
         verify(service).countTrainees();
     }
 
     @Test
-    void deleteAllTraineesShouldAuthenticateThenDelegate() {
+    void deleteAllTraineesShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
+        facade.deleteAllTrainees();
 
-        facade.deleteAllTrainees("user", "pass");
-
-        verify(authService).authenticate("user", "pass");
         verify(service).deleteAllTrainees();
     }
 
     @Test
-    void getTraineeTrainingsShouldAuthenticateThenDelegate() {
+    void getTraineeTrainingsShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         List<Training> trainings = List.of(mock(Training.class));
         LocalDateTime from = LocalDateTime.now().minusDays(1);
         LocalDateTime to = LocalDateTime.now();
 
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
         when(service.getTraineeTrainings("user", from, to, "John", TrainingType.YOGA))
                 .thenReturn(trainings);
 
         List<Training> result = facade.getTraineeTrainings(
-                "user", "pass", from, to, "John", TrainingType.YOGA
+                "user", from, to, "John", TrainingType.YOGA
         );
 
         assertSame(trainings, result);
-        verify(authService).authenticate("user", "pass");
         verify(service).getTraineeTrainings("user", from, to, "John", TrainingType.YOGA);
     }
 
     @Test
-    void getNotAssignedTrainersShouldAuthenticateThenDelegate() {
+    void getNotAssignedTrainersShouldDelegate() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         List<Trainer> trainers = List.of(mock(Trainer.class));
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
         when(service.getNotAssignedTrainers("user")).thenReturn(trainers);
 
-        List<Trainer> result = facade.getNotAssignedTrainers("user", "pass");
+        List<Trainer> result = facade.getNotAssignedTrainers("user");
 
         assertSame(trainers, result);
-        verify(authService).authenticate("user", "pass");
         verify(service).getNotAssignedTrainers("user");
     }
 
     @Test
-    void updateTraineeTrainersShouldAuthenticateThenDelegateAndReturnSummaries() {
+    void updateTraineeTrainersShouldDelegateAndReturnSummaries() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         User traineeUser = new User("Anna", "Smith", "anna.smith", "pass", true);
         Trainee trainee = new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr");
@@ -170,16 +143,14 @@ class TraineeFacadeTest {
         Trainer trainer = new Trainer(trainerUser, TrainingType.YOGA);
         trainee.addTrainer(trainer);
 
-        when(authService.authenticate("user", "pass")).thenReturn(mock(User.class));
         when(service.selectTraineeProfile("user")).thenReturn(trainee);
 
         List<TrainerSummaryResponse> result =
-                facade.updateTraineeTrainers("user", "pass", List.of("john.doe"));
+                facade.updateTraineeTrainers("user", List.of("john.doe"));
 
         assertEquals(1, result.size());
         assertEquals("john.doe", result.get(0).getUsername());
 
-        verify(authService).authenticate("user", "pass");
         verify(service).updateTraineeTrainers("user", List.of("john.doe"));
         verify(service).selectTraineeProfile("user");
     }

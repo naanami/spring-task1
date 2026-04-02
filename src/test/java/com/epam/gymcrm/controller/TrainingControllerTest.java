@@ -1,18 +1,25 @@
 package com.epam.gymcrm.controller;
 
 import com.epam.gymcrm.facade.TrainingFacade;
+import com.epam.gymcrm.security.CustomUserDetailsService;
+import com.epam.gymcrm.security.JwtService;
+import com.epam.gymcrm.security.SecurityAccessService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TrainingController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TrainingControllerTest {
 
     @Autowired
@@ -21,11 +28,20 @@ class TrainingControllerTest {
     @MockBean
     private TrainingFacade trainingFacade;
 
+    @MockBean
+    private SecurityAccessService securityAccessService;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
+
     @Test
     void createTrainingShouldReturnSuccess() throws Exception {
+        when(securityAccessService.getAuthenticatedUsername()).thenReturn("john.doe");
+
         mockMvc.perform(post("/api/trainings")
-                        .param("username", "john.doe")
-                        .param("password", "secret")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -42,7 +58,6 @@ class TrainingControllerTest {
 
         verify(trainingFacade).createTraining(
                 "john.doe",
-                "secret",
                 "john.doe",
                 "anna.smith",
                 "Morning Yoga",

@@ -1,6 +1,5 @@
 package com.epam.gymcrm.repository;
 
-import com.epam.gymcrm.config.AppConfig;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
@@ -9,16 +8,14 @@ import com.epam.gymcrm.entity.User;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringJUnitConfig(AppConfig.class)
-@Transactional
+@DataJpaTest
 class TraineeCascadeDeleteTest {
 
     @Autowired
@@ -54,13 +51,13 @@ class TraineeCascadeDeleteTest {
                 new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr")
         );
 
-        trainingRepository.save(
+        Training training = trainingRepository.save(
                 new Training(
                         trainee,
                         trainer,
                         "Morning Yoga",
                         TrainingType.YOGA,
-                        LocalDateTime.now(),
+                        LocalDateTime.of(2026, 3, 20, 9, 0),
                         60
                 )
         );
@@ -68,7 +65,10 @@ class TraineeCascadeDeleteTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertEquals(1, trainingRepository.findAll().size());
+        assertEquals(1, trainingRepository.count());
+
+        Training managedTraining = trainingRepository.findById(training.getId()).orElseThrow();
+        assertEquals("Anna.Smith", managedTraining.getTrainee().getUser().getUsername());
 
         Trainee managedTrainee = traineeRepository.findById(trainee.getId()).orElseThrow();
         traineeRepository.delete(managedTrainee);
@@ -76,6 +76,6 @@ class TraineeCascadeDeleteTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertEquals(0, trainingRepository.findAll().size());
+        assertEquals(0, trainingRepository.count());
     }
 }

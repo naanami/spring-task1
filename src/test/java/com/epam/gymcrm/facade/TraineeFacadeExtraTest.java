@@ -8,7 +8,6 @@ import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.entity.User;
-import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TraineeService;
 import org.junit.jupiter.api.Test;
 
@@ -24,8 +23,7 @@ class TraineeFacadeExtraTest {
     @Test
     void getTraineeProfileShouldMapEntityToResponse() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         User traineeUser = new User("Anna", "Smith", "anna.smith", "pass", true);
         Trainee trainee = new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr");
@@ -34,10 +32,9 @@ class TraineeFacadeExtraTest {
         Trainer trainer = new Trainer(trainerUser, TrainingType.YOGA);
         trainee.addTrainer(trainer);
 
-        when(authService.authenticate("anna.smith", "pass")).thenReturn(traineeUser);
         when(service.selectTraineeProfile("anna.smith")).thenReturn(trainee);
 
-        TraineeProfileResponse response = facade.getTraineeProfile("anna.smith", "pass");
+        TraineeProfileResponse response = facade.getTraineeProfile("anna.smith");
 
         assertEquals("anna.smith", response.getUsername());
         assertEquals("Anna", response.getFirstName());
@@ -50,20 +47,19 @@ class TraineeFacadeExtraTest {
     }
 
     @Test
-    void updateTraineeProfileShouldAuthenticateDelegateAndMap() {
+    void updateTraineeProfileShouldDelegateAndMap() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         User user = new User("Anna", "Smith", "anna.smith", "pass", true);
         Trainee trainee = new Trainee(user, LocalDate.of(2000, 1, 1), "New Addr");
 
-        when(authService.authenticate("anna.smith", "pass")).thenReturn(user);
-        when(service.updateTraineeProfile("anna.smith", "Anna", "Smith", LocalDate.of(2000, 1, 1), "New Addr", true))
+        when(service.updateTraineeProfile("anna.smith", "Anna", "Smith",
+                LocalDate.of(2000, 1, 1), "New Addr", true))
                 .thenReturn(trainee);
 
         TraineeProfileResponse response = facade.updateTraineeProfile(
-                "anna.smith", "pass", "Anna", "Smith", LocalDate.of(2000, 1, 1), "New Addr", true
+                "anna.smith", "Anna", "Smith", LocalDate.of(2000, 1, 1), "New Addr", true
         );
 
         assertEquals("anna.smith", response.getUsername());
@@ -73,15 +69,13 @@ class TraineeFacadeExtraTest {
     @Test
     void getNotAssignedActiveTrainersShouldMapToSummaryResponses() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         Trainer trainer = new Trainer(new User("John", "Doe", "john.doe", "pass", true), TrainingType.YOGA);
 
-        when(authService.authenticate("anna.smith", "pass")).thenReturn(mock(User.class));
         when(service.getNotAssignedTrainers("anna.smith")).thenReturn(List.of(trainer));
 
-        List<TrainerSummaryResponse> result = facade.getNotAssignedActiveTrainers("anna.smith", "pass");
+        List<TrainerSummaryResponse> result = facade.getNotAssignedActiveTrainers("anna.smith");
 
         assertEquals(1, result.size());
         assertEquals("john.doe", result.get(0).getUsername());
@@ -91,8 +85,7 @@ class TraineeFacadeExtraTest {
     @Test
     void getTraineeTrainingResponsesShouldMapTrainings() {
         TraineeService service = mock(TraineeService.class);
-        AuthService authService = mock(AuthService.class);
-        TraineeFacade facade = new TraineeFacade(service, authService);
+        TraineeFacade facade = new TraineeFacade(service);
 
         Trainee trainee = new Trainee(new User("Anna", "Smith", "anna.smith", "pass", true), null, "Addr");
         Trainer trainer = new Trainer(new User("John", "Doe", "john.doe", "pass", true), TrainingType.YOGA);
@@ -101,12 +94,11 @@ class TraineeFacadeExtraTest {
                 LocalDateTime.of(2026, 3, 20, 9, 0), 60
         );
 
-        when(authService.authenticate("anna.smith", "pass")).thenReturn(mock(User.class));
         when(service.getTraineeTrainings("anna.smith", null, null, null, null))
                 .thenReturn(List.of(training));
 
         List<TraineeTrainingResponse> result =
-                facade.getTraineeTrainingResponses("anna.smith", "pass", null, null, null, null);
+                facade.getTraineeTrainingResponses("anna.smith", null, null, null, null);
 
         assertEquals(1, result.size());
         assertEquals("Morning Yoga", result.get(0).getTrainingName());

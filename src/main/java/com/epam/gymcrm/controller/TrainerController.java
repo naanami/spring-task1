@@ -6,6 +6,7 @@ import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.dto.response.TrainerProfileResponse;
 import com.epam.gymcrm.dto.response.TrainerTrainingResponse;
 import com.epam.gymcrm.facade.TrainerFacade;
+import com.epam.gymcrm.security.SecurityAccessService;
 import io.swagger.annotations.*;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,9 +21,12 @@ import java.util.List;
 public class TrainerController {
 
     private final TrainerFacade trainerFacade;
+    private final SecurityAccessService securityAccessService;
 
-    public TrainerController(TrainerFacade trainerFacade) {
+    public TrainerController(TrainerFacade trainerFacade,
+                             SecurityAccessService securityAccessService) {
         this.trainerFacade = trainerFacade;
+        this.securityAccessService = securityAccessService;
     }
 
     @PostMapping
@@ -37,27 +41,18 @@ public class TrainerController {
 
     @GetMapping("/{username}")
     @ApiOperation("Get trainer profile by username")
-    public TrainerProfileResponse getTrainerProfile(
-            @ApiParam(value = "Trainer username", required = true)
-            @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password
-    ) {
-        return trainerFacade.getTrainerProfile(username, password);
+    public TrainerProfileResponse getTrainerProfile(@PathVariable String username) {
+        securityAccessService.ensureSameUser(username);
+        return trainerFacade.getTrainerProfile(username);
     }
 
     @PutMapping("/{username}")
     @ApiOperation("Update trainer profile")
-    public TrainerProfileResponse updateTrainerProfile(
-            @ApiParam(value = "Trainer username", required = true)
-            @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password,
-            @Valid @RequestBody UpdateTrainerRequest request
-    ) {
+    public TrainerProfileResponse updateTrainerProfile(@PathVariable String username,
+                                                       @Valid @RequestBody UpdateTrainerRequest request) {
+        securityAccessService.ensureSameUser(username);
         return trainerFacade.updateTrainerProfile(
                 username,
-                password,
                 request.getFirstName(),
                 request.getLastName(),
                 request.getActive()
@@ -67,19 +62,16 @@ public class TrainerController {
     @GetMapping("/{username}/trainings")
     @ApiOperation("Get trainer trainings with optional filters")
     public List<TrainerTrainingResponse> getTrainerTrainings(
-            @ApiParam(value = "Trainer username", required = true)
             @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(required = false) String traineeName
     ) {
+        securityAccessService.ensureSameUser(username);
         return trainerFacade.getTrainerTrainingResponses(
                 username,
-                password,
                 from,
                 to,
                 traineeName

@@ -1,6 +1,5 @@
 package com.epam.gymcrm.repository;
 
-import com.epam.gymcrm.config.AppConfig;
 import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
@@ -9,8 +8,7 @@ import com.epam.gymcrm.entity.User;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,8 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringJUnitConfig(AppConfig.class)
-@Transactional
+@DataJpaTest
 class TrainingRepositoryTest {
 
     @Autowired
@@ -45,17 +42,20 @@ class TrainingRepositoryTest {
         Trainer trainer = trainerRepository.save(new Trainer(trainerUser, TrainingType.YOGA));
         Trainee trainee = traineeRepository.save(new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr"));
 
+        LocalDateTime yogaTime = LocalDateTime.of(2026, 3, 20, 9, 0);
+        LocalDateTime cardioTime = LocalDateTime.of(2026, 3, 20, 11, 0);
+
         trainingRepository.save(new Training(
                 trainee, trainer, "Morning Yoga",
                 TrainingType.YOGA,
-                LocalDateTime.now().minusDays(1),
+                yogaTime,
                 60
         ));
 
         trainingRepository.save(new Training(
                 trainee, trainer, "Cardio Session",
                 TrainingType.CARDIO,
-                LocalDateTime.now().minusDays(1),
+                cardioTime,
                 45
         ));
 
@@ -64,8 +64,8 @@ class TrainingRepositoryTest {
 
         List<Training> result = trainingRepository.findTraineeTrainings(
                 "Anna.Smith",
-                LocalDateTime.now().minusDays(30),
-                LocalDateTime.now().plusDays(1),
+                LocalDateTime.of(2026, 3, 1, 0, 0),
+                LocalDateTime.of(2026, 3, 31, 23, 59),
                 "John Doe",
                 TrainingType.YOGA
         );
@@ -85,7 +85,7 @@ class TrainingRepositoryTest {
         trainingRepository.save(new Training(
                 trainee, trainer, "Morning Yoga",
                 TrainingType.YOGA,
-                LocalDateTime.now().minusDays(1),
+                LocalDateTime.of(2026, 3, 20, 9, 0),
                 60
         ));
 
@@ -94,8 +94,8 @@ class TrainingRepositoryTest {
 
         List<Training> result = trainingRepository.findTrainerTrainings(
                 "John.Doe",
-                LocalDateTime.now().minusDays(30),
-                LocalDateTime.now().plusDays(1),
+                LocalDateTime.of(2026, 3, 1, 0, 0),
+                LocalDateTime.of(2026, 3, 31, 23, 59),
                 "Anna Smith"
         );
 
@@ -113,7 +113,7 @@ class TrainingRepositoryTest {
         trainingRepository.save(new Training(
                 trainee, trainer, "Morning Yoga",
                 TrainingType.YOGA,
-                LocalDateTime.now().minusDays(1),
+                LocalDateTime.of(2026, 3, 20, 9, 0),
                 60
         ));
 
@@ -141,7 +141,7 @@ class TrainingRepositoryTest {
         trainingRepository.save(new Training(
                 trainee, trainer, "Morning Yoga",
                 TrainingType.YOGA,
-                LocalDateTime.now().minusDays(1),
+                LocalDateTime.of(2026, 3, 20, 9, 0),
                 60
         ));
 
@@ -168,7 +168,8 @@ class TrainingRepositoryTest {
 
         Trainer trainer1 = trainerRepository.save(new Trainer(trainerUser1, TrainingType.YOGA));
         Trainer trainer2 = trainerRepository.save(new Trainer(trainerUser2, TrainingType.CARDIO));
-        Trainer inactiveTrainer = trainerRepository.save(new Trainer(trainerUser3, TrainingType.CARDIO));
+        trainerRepository.save(new Trainer(trainerUser3, TrainingType.CARDIO));
+
         Trainee trainee = traineeRepository.save(new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Addr"));
 
         trainee.addTrainer(trainer1);

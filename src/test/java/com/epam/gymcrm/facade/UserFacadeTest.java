@@ -1,6 +1,5 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.UserService;
 import org.junit.jupiter.api.Test;
 
@@ -9,14 +8,12 @@ import static org.mockito.Mockito.*;
 class UserFacadeTest {
 
     @Test
-    void toggleUserActivationShouldAuthenticateThenDelegate() {
+    void toggleUserActivationShouldDelegate() {
         UserService userService = mock(UserService.class);
-        AuthService authService = mock(AuthService.class);
-        UserFacade facade = new UserFacade(userService, authService);
+        UserFacade facade = new UserFacade(userService);
 
-        facade.toggleUserActivation("john.doe", "secret");
+        facade.toggleUserActivation("john.doe");
 
-        verify(authService).authenticate("john.doe", "secret");
         verify(userService).toggleActive("john.doe");
     }
 }

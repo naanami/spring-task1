@@ -7,7 +7,6 @@ import com.epam.gymcrm.dto.response.TrainerTrainingResponse;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
-import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TrainerService;
 import org.springframework.stereotype.Component;
 
@@ -18,11 +17,9 @@ import java.util.List;
 public class TrainerFacade {
 
     private final TrainerService trainerService;
-    private final AuthService authService;
 
-    public TrainerFacade(TrainerService trainerService, AuthService authService) {
+    public TrainerFacade(TrainerService trainerService) {
         this.trainerService = trainerService;
-        this.authService = authService;
     }
 
     public GeneratedCredentials createTrainerProfile(String firstName,
@@ -31,42 +28,15 @@ public class TrainerFacade {
         return trainerService.createTrainerProfile(firstName, lastName, specialization);
     }
 
-    public Trainer selectTrainerProfile(String username, String password) {
-        authService.authenticate(username, password);
-        return trainerService.selectTrainerProfile(username);
-    }
-
-    public long countTrainers(String username, String password) {
-        authService.authenticate(username, password);
-        return trainerService.countTrainers();
-    }
-
-    public void deleteAllTrainers(String username, String password) {
-        authService.authenticate(username, password);
-        trainerService.deleteAllTrainers();
-    }
-
-    public List<Training> getTrainerTrainings(String username,
-                                              String password,
-                                              LocalDateTime from,
-                                              LocalDateTime to,
-                                              String traineeName) {
-        authService.authenticate(username, password);
-        return trainerService.getTrainerTrainings(username, from, to, traineeName);
-    }
-
-    public TrainerProfileResponse getTrainerProfile(String username, String password) {
-        Trainer trainer = selectTrainerProfile(username, password);
+    public TrainerProfileResponse getTrainerProfile(String username) {
+        Trainer trainer = trainerService.selectTrainerProfile(username);
         return mapToResponse(trainer);
     }
 
     public TrainerProfileResponse updateTrainerProfile(String username,
-                                                       String password,
                                                        String firstName,
                                                        String lastName,
                                                        Boolean active) {
-        authService.authenticate(username, password);
-
         Trainer trainer = trainerService.updateTrainerProfile(
                 username,
                 firstName,
@@ -77,12 +47,18 @@ public class TrainerFacade {
         return mapToResponse(trainer);
     }
 
+    public List<Training> getTrainerTrainings(String username,
+                                              LocalDateTime from,
+                                              LocalDateTime to,
+                                              String traineeName) {
+        return trainerService.getTrainerTrainings(username, from, to, traineeName);
+    }
+
     public List<TrainerTrainingResponse> getTrainerTrainingResponses(String username,
-                                                                     String password,
                                                                      LocalDateTime from,
                                                                      LocalDateTime to,
                                                                      String traineeName) {
-        return getTrainerTrainings(username, password, from, to, traineeName)
+        return getTrainerTrainings(username, from, to, traineeName)
                 .stream()
                 .map(training -> new TrainerTrainingResponse(
                         training.getTrainingName(),

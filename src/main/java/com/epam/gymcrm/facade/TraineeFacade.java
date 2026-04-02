@@ -8,7 +8,6 @@ import com.epam.gymcrm.entity.Trainee;
 import com.epam.gymcrm.entity.Trainer;
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
-import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.TraineeService;
 import org.springframework.stereotype.Component;
 
@@ -20,11 +19,9 @@ import java.util.List;
 public class TraineeFacade {
 
     private final TraineeService traineeService;
-    private final AuthService authService;
 
-    public TraineeFacade(TraineeService traineeService, AuthService authService) {
+    public TraineeFacade(TraineeService traineeService) {
         this.traineeService = traineeService;
-        this.authService = authService;
     }
 
     public GeneratedCredentials createTraineeProfile(String firstName,
@@ -34,55 +31,45 @@ public class TraineeFacade {
         return traineeService.createTraineeProfile(firstName, lastName, dateOfBirth, address);
     }
 
-    public Trainee selectTraineeProfile(String username, String password) {
-        authService.authenticate(username, password);
+    public Trainee selectTraineeProfile(String username) {
         return traineeService.selectTraineeProfile(username);
     }
 
-    public TraineeProfileResponse getTraineeProfile(String username, String password) {
-        Trainee trainee = selectTraineeProfile(username, password);
+    public TraineeProfileResponse getTraineeProfile(String username) {
+        Trainee trainee = selectTraineeProfile(username);
         return mapToResponse(trainee);
     }
 
-    public Trainee updateTraineeAddress(String username, String password, String newAddress) {
-        authService.authenticate(username, password);
+    public Trainee updateTraineeAddress(String username, String newAddress) {
         return traineeService.updateTraineeAddress(username, newAddress);
     }
 
-    public void deleteTraineeProfile(String username, String password) {
-        authService.authenticate(username, password);
+    public void deleteTraineeProfile(String username) {
         traineeService.deleteTraineeProfile(username);
     }
 
-    public long countTrainees(String username, String password) {
-        authService.authenticate(username, password);
+    public long countTrainees() {
         return traineeService.countTrainees();
     }
 
-    public void deleteAllTrainees(String username, String password) {
-        authService.authenticate(username, password);
+    public void deleteAllTrainees() {
         traineeService.deleteAllTrainees();
     }
 
     public List<Training> getTraineeTrainings(String username,
-                                              String password,
                                               LocalDateTime from,
                                               LocalDateTime to,
                                               String trainerName,
                                               TrainingType type) {
-        authService.authenticate(username, password);
         return traineeService.getTraineeTrainings(username, from, to, trainerName, type);
     }
 
-    public List<Trainer> getNotAssignedTrainers(String username, String password) {
-        authService.authenticate(username, password);
+    public List<Trainer> getNotAssignedTrainers(String username) {
         return traineeService.getNotAssignedTrainers(username);
     }
 
     public List<TrainerSummaryResponse> updateTraineeTrainers(String username,
-                                                              String password,
                                                               List<String> trainerUsernames) {
-        authService.authenticate(username, password);
         traineeService.updateTraineeTrainers(username, trainerUsernames);
 
         Trainee trainee = traineeService.selectTraineeProfile(username);
@@ -99,14 +86,11 @@ public class TraineeFacade {
     }
 
     public TraineeProfileResponse updateTraineeProfile(String username,
-                                                       String password,
                                                        String firstName,
                                                        String lastName,
                                                        LocalDate dateOfBirth,
                                                        String address,
                                                        Boolean active) {
-        authService.authenticate(username, password);
-
         Trainee trainee = traineeService.updateTraineeProfile(
                 username,
                 firstName,
@@ -119,9 +103,7 @@ public class TraineeFacade {
         return mapToResponse(trainee);
     }
 
-    public List<TrainerSummaryResponse> getNotAssignedActiveTrainers(String username, String password) {
-        authService.authenticate(username, password);
-
+    public List<TrainerSummaryResponse> getNotAssignedActiveTrainers(String username) {
         return traineeService.getNotAssignedTrainers(username)
                 .stream()
                 .map(trainer -> new TrainerSummaryResponse(
@@ -134,12 +116,11 @@ public class TraineeFacade {
     }
 
     public List<TraineeTrainingResponse> getTraineeTrainingResponses(String username,
-                                                                     String password,
                                                                      LocalDateTime from,
                                                                      LocalDateTime to,
                                                                      String trainerName,
                                                                      TrainingType type) {
-        return getTraineeTrainings(username, password, from, to, trainerName, type)
+        return getTraineeTrainings(username, from, to, trainerName, type)
                 .stream()
                 .map(training -> new TraineeTrainingResponse(
                         training.getTrainingName(),

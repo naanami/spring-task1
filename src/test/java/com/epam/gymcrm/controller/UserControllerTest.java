@@ -1,32 +1,36 @@
 package com.epam.gymcrm.controller;
 
 import com.epam.gymcrm.facade.UserFacade;
-import com.epam.gymcrm.service.AuthService;
+import com.epam.gymcrm.security.CustomUserDetailsService;
+import com.epam.gymcrm.security.JwtService;
+import com.epam.gymcrm.security.SecurityAccessService;
 import com.epam.gymcrm.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private AuthService authService;
+    private JwtService jwtService;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
 
     @MockBean
     private UserService userService;
@@ -34,18 +38,8 @@ class UserControllerTest {
     @MockBean
     private UserFacade userFacade;
 
-    @Test
-    void loginShouldReturnSuccess() throws Exception {
-        when(authService.authenticate(anyString(), anyString())).thenReturn(null);
-
-        mockMvc.perform(get("/api/users/login")
-                        .param("username", "john.doe")
-                        .param("password", "secret"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Login successful"));
-
-        verify(authService).authenticate("john.doe", "secret");
-    }
+    @MockBean
+    private SecurityAccessService securityAccessService;
 
     @Test
     void changePasswordShouldReturnSuccess() throws Exception {
@@ -61,16 +55,17 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("Password changed successfully"));
 
+        verify(securityAccessService).ensureSameUser("john.doe");
         verify(userService).changePassword("john.doe", "old123", "new123");
     }
 
     @Test
     void toggleActivationShouldReturnSuccess() throws Exception {
-        mockMvc.perform(patch("/api/users/john.doe/activation")
-                        .param("password", "secret"))
+        mockMvc.perform(patch("/api/users/john.doe/activation"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("User activation status changed successfully"));
 
-        verify(userFacade).toggleUserActivation("john.doe", "secret");
+        verify(securityAccessService).ensureSameUser("john.doe");
+        verify(userFacade).toggleUserActivation("john.doe");
     }
 }

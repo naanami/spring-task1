@@ -2,7 +2,10 @@ package com.epam.gymcrm.exception;
 
 import com.epam.gymcrm.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,5 +26,15 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleGeneric(RuntimeException ex) {
         return new ErrorResponse(500, "Something went wrong");
+    }
+
+    @ExceptionHandler(UserBlockedException.class)
+    public ResponseEntity<?> handleUserBlocked(UserBlockedException ex) {
+        return ResponseEntity
+                .status(423)
+                .body(Map.of(
+                        "status", 423,
+                        "message", ex.getMessage()
+                ));
     }
 }

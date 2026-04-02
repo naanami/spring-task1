@@ -3,8 +3,12 @@ package com.epam.gymcrm.controller;
 import com.epam.gymcrm.dto.response.GeneratedCredentials;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.facade.TrainerFacade;
+import com.epam.gymcrm.security.CustomUserDetailsService;
+import com.epam.gymcrm.security.JwtService;
+import com.epam.gymcrm.security.SecurityAccessService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -17,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TrainerController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TrainerControllerTest {
 
     @Autowired
@@ -24,6 +29,15 @@ class TrainerControllerTest {
 
     @MockBean
     private TrainerFacade trainerFacade;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
+
+    @MockBean
+    private SecurityAccessService securityAccessService;
 
     @Test
     void registerTrainerShouldReturnCredentials() throws Exception {
@@ -33,12 +47,12 @@ class TrainerControllerTest {
         mockMvc.perform(post("/api/trainers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {
-                                  "firstName": "Anna",
-                                  "lastName": "Smith",
-                                  "specialization": "YOGA"
-                                }
-                                """))
+                            {
+                              "firstName": "Anna",
+                              "lastName": "Smith",
+                              "specialization": "YOGA"
+                            }
+                            """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("anna.smith"))
                 .andExpect(jsonPath("$.password").value("secret"));

@@ -9,7 +9,11 @@ import com.epam.gymcrm.dto.response.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.response.TrainerSummaryResponse;
 import com.epam.gymcrm.entity.TrainingType;
 import com.epam.gymcrm.facade.TraineeFacade;
-import io.swagger.annotations.*;
+import com.epam.gymcrm.security.SecurityAccessService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +27,12 @@ import java.util.List;
 public class TraineeController {
 
     private final TraineeFacade traineeFacade;
+    private final SecurityAccessService securityAccessService;
 
-    public TraineeController(TraineeFacade traineeFacade) {
+    public TraineeController(TraineeFacade traineeFacade,
+                             SecurityAccessService securityAccessService) {
         this.traineeFacade = traineeFacade;
+        this.securityAccessService = securityAccessService;
     }
 
     @PostMapping
@@ -45,36 +52,21 @@ public class TraineeController {
 
     @GetMapping("/{username}")
     @ApiOperation("Get trainee profile by username")
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Trainee profile returned"),
-            @ApiResponse(code = 404, message = "Trainee not found")
-    })
-    public TraineeProfileResponse getTraineeProfile(
-            @ApiParam(value = "Trainee username", required = true)
-            @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password
-    ) {
-        return traineeFacade.getTraineeProfile(username, password);
+    public TraineeProfileResponse getTraineeProfile(@PathVariable String username) {
+        securityAccessService.ensureSameUser(username);
+        return traineeFacade.getTraineeProfile(username);
     }
 
     @PutMapping("/{username}")
     @ApiOperation("Update trainee profile")
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Trainee profile updated"),
-            @ApiResponse(code = 400, message = "Invalid trainee input"),
-            @ApiResponse(code = 404, message = "Trainee not found")
-    })
     public TraineeProfileResponse updateTraineeProfile(
-            @ApiParam(value = "Trainee username", required = true)
             @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password,
             @Valid @RequestBody UpdateTraineeRequest request
     ) {
+        securityAccessService.ensureSameUser(username);
+
         return traineeFacade.updateTraineeProfile(
                 username,
-                password,
                 request.getFirstName(),
                 request.getLastName(),
                 request.getDateOfBirth(),
@@ -85,54 +77,33 @@ public class TraineeController {
 
     @DeleteMapping("/{username}")
     @ApiOperation("Delete trainee profile")
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Trainee profile deleted"),
-            @ApiResponse(code = 404, message = "Trainee not found")
-    })
-    public String deleteTraineeProfile(
-            @ApiParam(value = "Trainee username", required = true)
-            @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password
-    ) {
-        traineeFacade.deleteTraineeProfile(username, password);
+    public String deleteTraineeProfile(@PathVariable String username) {
+        securityAccessService.ensureSameUser(username);
+        traineeFacade.deleteTraineeProfile(username);
         return "Trainee profile deleted successfully";
     }
 
     @GetMapping("/{username}/unassigned-trainers")
     @ApiOperation("Get not assigned active trainers for trainee")
-    public List<TrainerSummaryResponse> getNotAssignedActiveTrainers(
-            @ApiParam(value = "Trainee username", required = true)
-            @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password
-    ) {
-        return traineeFacade.getNotAssignedActiveTrainers(username, password);
+    public List<TrainerSummaryResponse> getNotAssignedActiveTrainers(@PathVariable String username) {
+        securityAccessService.ensureSameUser(username);
+        return traineeFacade.getNotAssignedActiveTrainers(username);
     }
 
     @PutMapping("/{username}/trainers")
     @ApiOperation("Update trainee trainers list")
     public List<TrainerSummaryResponse> updateTraineeTrainers(
-            @ApiParam(value = "Trainee username", required = true)
             @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password,
             @Valid @RequestBody UpdateTraineeTrainersRequest request
     ) {
-        return traineeFacade.updateTraineeTrainers(
-                username,
-                password,
-                request.getTrainerUsernames()
-        );
+        securityAccessService.ensureSameUser(username);
+        return traineeFacade.updateTraineeTrainers(username, request.getTrainerUsernames());
     }
 
     @GetMapping("/{username}/trainings")
     @ApiOperation("Get trainee trainings with optional filters")
     public List<TraineeTrainingResponse> getTraineeTrainings(
-            @ApiParam(value = "Trainee username", required = true)
             @PathVariable String username,
-            @ApiParam(value = "User password", required = true)
-            @RequestParam String password,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false)
@@ -140,9 +111,10 @@ public class TraineeController {
             @RequestParam(required = false) String trainerName,
             @RequestParam(required = false) TrainingType type
     ) {
+        securityAccessService.ensureSameUser(username);
+
         return traineeFacade.getTraineeTrainingResponses(
                 username,
-                password,
                 from,
                 to,
                 trainerName,

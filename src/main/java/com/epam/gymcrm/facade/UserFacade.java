@@ -1,6 +1,5 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.service.AuthService;
 import com.epam.gymcrm.service.UserService;
 import org.springframework.stereotype.Component;
 
@@ -8,15 +7,12 @@ import org.springframework.stereotype.Component;
 public class UserFacade {
 
     private final UserService userService;
-    private final AuthService authService;
 
-    public UserFacade(UserService userService, AuthService authService) {
+    public UserFacade(UserService userService) {
         this.userService = userService;
-        this.authService = authService;
     }
 
-    public void toggleUserActivation(String username, String password) {
-        authService.authenticate(username, password);
+    public void toggleUserActivation(String username) {
         userService.toggleActive(username);
     }
 }

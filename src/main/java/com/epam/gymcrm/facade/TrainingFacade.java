@@ -2,7 +2,7 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.entity.Training;
 import com.epam.gymcrm.entity.TrainingType;
-import com.epam.gymcrm.service.AuthService;
+import com.epam.gymcrm.security.SecurityAccessService;
 import com.epam.gymcrm.service.TrainingService;
 import org.springframework.stereotype.Component;
 
@@ -15,15 +15,15 @@ import java.util.UUID;
 public class TrainingFacade {
 
     private final TrainingService trainingService;
-    private final AuthService authService;
+    private final SecurityAccessService securityAccessService;
 
-    public TrainingFacade(TrainingService trainingService, AuthService authService) {
+    public TrainingFacade(TrainingService trainingService,
+                          SecurityAccessService securityAccessService) {
         this.trainingService = trainingService;
-        this.authService = authService;
+        this.securityAccessService = securityAccessService;
     }
 
-    public void createTraining(String username,
-                               String password,
+    public void createTraining(String authenticatedUsername,
                                String traineeUsername,
                                String trainerUsername,
                                String trainingName,
@@ -31,7 +31,7 @@ public class TrainingFacade {
                                LocalDateTime trainingDate,
                                int trainingDuration) {
 
-        authService.authenticate(username, password);
+        securityAccessService.ensureSameUser(authenticatedUsername);
 
         trainingService.createTraining(
                 traineeUsername,
@@ -43,23 +43,19 @@ public class TrainingFacade {
         );
     }
 
-    public Optional<Training> selectTraining(String username, String password, UUID trainingId) {
-        authService.authenticate(username, password);
+    public Optional<Training> selectTraining(UUID trainingId) {
         return trainingService.selectTraining(trainingId);
     }
 
-    public List<Training> selectAllTrainings(String username, String password) {
-        authService.authenticate(username, password);
+    public List<Training> selectAllTrainings() {
         return trainingService.selectAllTrainings();
     }
 
-    public long countTrainings(String username, String password) {
-        authService.authenticate(username, password);
+    public long countTrainings() {
         return trainingService.countTrainings();
     }
 
-    public void deleteAllTrainings(String username, String password) {
-        authService.authenticate(username, password);
+    public void deleteAllTrainings() {
         trainingService.deleteAllTrainings();
     }
 }

@@ -7,6 +7,7 @@ import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.util.CredentialsGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +21,14 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final CredentialsGenerator credentialsGenerator;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, CredentialsGenerator credentialsGenerator) {
+    public UserService(UserRepository userRepository,
+                       CredentialsGenerator credentialsGenerator,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.credentialsGenerator = credentialsGenerator;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -31,14 +36,15 @@ public class UserService {
         log.debug("Registering user: firstName={}, lastName={}", firstName, lastName);
 
         String username = credentialsGenerator.generateUniqueUsername(firstName, lastName);
-        String password = credentialsGenerator.generatePassword();
+        String rawPassword = credentialsGenerator.generatePassword();
+        String encodedPassword = passwordEncoder.encode(rawPassword);
 
-        User user = new User(firstName, lastName, username, password, true);
+        User user = new User(firstName, lastName, username, encodedPassword, true);
         User saved = userRepository.save(user);
 
         log.info("User registered: id={}, username={}", saved.getId(), username);
 
-        return new GeneratedCredentials(saved.getId(), username, password);
+        return new GeneratedCredentials(saved.getId(), username, rawPassword);
     }
 
     @Transactional
@@ -56,11 +62,11 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("User not found: " + username));
 
-        if (!user.getPassword().equals(oldPassword)) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new IllegalArgumentException("Invalid password");
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
     }
 
     @Transactional

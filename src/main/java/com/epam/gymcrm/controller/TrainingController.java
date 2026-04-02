@@ -2,7 +2,9 @@ package com.epam.gymcrm.controller;
 
 import com.epam.gymcrm.dto.request.CreateTrainingRequest;
 import com.epam.gymcrm.facade.TrainingFacade;
-import io.swagger.annotations.*;
+import com.epam.gymcrm.security.SecurityAccessService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,23 +14,21 @@ import org.springframework.web.bind.annotation.*;
 public class TrainingController {
 
     private final TrainingFacade trainingFacade;
+    private final SecurityAccessService securityAccessService;
 
-    public TrainingController(TrainingFacade trainingFacade) {
+    public TrainingController(TrainingFacade trainingFacade,
+                              SecurityAccessService securityAccessService) {
         this.trainingFacade = trainingFacade;
+        this.securityAccessService = securityAccessService;
     }
 
     @PostMapping
     @ApiOperation("Create training")
-    public String createTraining(
-            @ApiParam(value = "Authenticated username", required = true)
-            @RequestParam String username,
-            @ApiParam(value = "Authenticated user password", required = true)
-            @RequestParam String password,
-            @Valid @RequestBody CreateTrainingRequest request
-    ) {
+    public String createTraining(@Valid @RequestBody CreateTrainingRequest request) {
+        String authenticatedUsername = securityAccessService.getAuthenticatedUsername();
+
         trainingFacade.createTraining(
-                username,
-                password,
+                authenticatedUsername,
                 request.getTraineeUsername(),
                 request.getTrainerUsername(),
                 request.getTrainingName(),
