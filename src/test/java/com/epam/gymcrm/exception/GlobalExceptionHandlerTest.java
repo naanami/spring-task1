@@ -32,4 +32,12 @@ class GlobalExceptionHandlerTest {
         assertEquals(500, response.getStatus());
         assertEquals("Something went wrong", response.getMessage());
     }
+
+    @Test
+    void shouldHandleUserBlocked() {
+        ErrorResponse response = handler.handleUserBlocked(new UserBlockedException("Blocked"));
+
+        assertEquals(423, response.getStatus());
+        assertEquals("Blocked", response.getMessage());
+    }
 }

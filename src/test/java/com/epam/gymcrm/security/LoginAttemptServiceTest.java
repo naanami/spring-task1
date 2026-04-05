@@ -20,15 +20,18 @@ class LoginAttemptServiceTest {
         service.loginFailed("john.doe");
 
         assertTrue(service.isBlocked("john.doe"));
+        assertTrue(service.getRemainingBlockSeconds("john.doe") > 0);
     }
 
     @Test
-    void successfulLoginShouldResetAttempts() {
+    void successfulLoginShouldResetAttemptsAndBlock() {
+        service.loginFailed("john.doe");
         service.loginFailed("john.doe");
         service.loginFailed("john.doe");
 
         service.loginSucceeded("john.doe");
 
         assertFalse(service.isBlocked("john.doe"));
+        assertEquals(0, service.getRemainingBlockSeconds("john.doe"));
     }
 }

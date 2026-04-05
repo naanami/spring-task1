@@ -29,12 +29,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserBlockedException.class)
-    public ResponseEntity<?> handleUserBlocked(UserBlockedException ex) {
-        return ResponseEntity
-                .status(423)
-                .body(Map.of(
-                        "status", 423,
-                        "message", ex.getMessage()
-                ));
+    @ResponseStatus(HttpStatus.LOCKED)
+    public ErrorResponse handleUserBlocked(UserBlockedException ex) {
+        return new ErrorResponse(423, ex.getMessage());
     }
 }
