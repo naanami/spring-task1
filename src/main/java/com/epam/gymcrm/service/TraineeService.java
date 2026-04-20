@@ -11,6 +11,7 @@ import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.UserRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Set;
 
 @Service
 public class TraineeService {
@@ -32,19 +32,22 @@ public class TraineeService {
     private final UserService userService;
     private final TrainerRepository trainerRepository;
     private final TrainingRepository trainingRepository;
-
+    private final TrainerWorkloadIntegrationService trainerWorkloadIntegrationService;
 
     public TraineeService(TraineeRepository traineeRepository,
                           UserRepository userRepository,
                           UserService userService,
                           TrainerRepository trainerRepository,
                           TrainingRepository trainingRepository,
+                          TrainerWorkloadIntegrationService trainerWorkloadIntegrationService,
                           MeterRegistry meterRegistry) {
         this.traineeRepository = traineeRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.trainerRepository = trainerRepository;
         this.trainingRepository = trainingRepository;
+        this.trainerWorkloadIntegrationService = trainerWorkloadIntegrationService;
+
         meterRegistry.gauge("trainees.count", this, service -> service.countTrainees());
     }
 
@@ -60,16 +63,16 @@ public class TraineeService {
             throw new IllegalArgumentException("User cannot be registered as both trainer and trainee");
         }
 
-        GeneratedCredentials creds = userService.registerUser(firstName, lastName);
+        GeneratedCredentials credentials = userService.registerUser(firstName, lastName);
 
-        User user = userRepository.findById(creds.getUserId())
-                .orElseThrow(() -> new NotFoundException("User not found: " + creds.getUserId()));
+        User user = userRepository.findById(credentials.getUserId())
+                .orElseThrow(() -> new NotFoundException("User not found: " + credentials.getUserId()));
 
         Trainee trainee = new Trainee(user, dateOfBirth, address);
         traineeRepository.save(trainee);
 
-        log.info("Trainee profile created: userId={}", creds.getUserId());
-        return creds;
+        log.info("Trainee profile created: userId={}", credentials.getUserId());
+        return credentials;
     }
 
     @Transactional(readOnly = true)
@@ -91,10 +94,10 @@ public class TraineeService {
                 });
 
         trainee.setAddress(newAddress);
-        Trainee saved = traineeRepository.save(trainee);
+        Trainee savedTrainee = traineeRepository.save(trainee);
 
         log.info("Trainee address updated: username={}", username);
-        return saved;
+        return savedTrainee;
     }
 
     @Transactional
@@ -104,12 +107,24 @@ public class TraineeService {
         Trainee trainee = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
 
+        List<Training> trainings = trainingRepository.findByTrainee_User_Username(username);
+
+        for (Training training : trainings) {
+            trainerWorkloadIntegrationService.sendTrainingDeleted(
+                    training.getTrainer(),
+                    training.getTrainingDate().toLocalDate(),
+                    training.getTrainingDuration()
+            );
+        }
+
         for (Trainer existingTrainer : List.copyOf(trainee.getTrainers())) {
             trainee.removeTrainer(existingTrainer);
         }
 
         traineeRepository.delete(trainee);
         userService.deleteUser(trainee.getUser().getId());
+
+        log.info("Trainee profile deleted: username={}, deletedTrainings={}", username, trainings.size());
     }
 
     @Transactional(readOnly = true)
@@ -119,9 +134,9 @@ public class TraineeService {
 
     @Transactional
     public void deleteAllTrainees() {
-        var userIds = traineeRepository.findAll().stream()
-                .map(t -> t.getUser().getId())
-                .collect(Collectors.toSet());
+        Set<java.util.UUID> userIds = traineeRepository.findAll().stream()
+                .map(trainee -> trainee.getUser().getId())
+                .collect(java.util.stream.Collectors.toSet());
 
         traineeRepository.deleteAll();
         userService.deleteUsers(userIds);
@@ -132,32 +147,27 @@ public class TraineeService {
                                               LocalDateTime from,
                                               LocalDateTime to,
                                               String trainerName,
-                                              TrainingType type) {
-        return trainingRepository.findTraineeTrainings(username, from, to, trainerName, type);
+                                              TrainingType trainingType) {
+        return trainingRepository.findTraineeTrainings(username, from, to, trainerName, trainingType);
     }
 
     @Transactional(readOnly = true)
-    public List<Trainer> getNotAssignedTrainers(String traineeUsername) {
-        return trainerRepository.findNotAssignedToTrainee(traineeUsername);
+    public List<Trainer> getNotAssignedTrainers(String username) {
+        selectTraineeProfile(username);
+        return trainerRepository.findActiveTrainersNotAssignedToTrainee(username);
     }
 
     @Transactional
-    public void updateTraineeTrainers(String traineeUsername, List<String> trainerUsernames) {
-        Trainee trainee = traineeRepository.findByUserUsername(traineeUsername)
-                .orElseThrow(() -> new NotFoundException("Trainee not found: " + traineeUsername));
+    public void updateTraineeTrainers(String username, List<String> trainerUsernames) {
+        Trainee trainee = traineeRepository.findDetailedByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
 
-        for (Trainer existingTrainer : List.copyOf(trainee.getTrainers())) {
-            trainee.removeTrainer(existingTrainer);
-        }
+        List<Trainer> newTrainers = trainerRepository.findByUserUsernameIn(trainerUsernames);
 
-        for (String trainerUsername : trainerUsernames) {
-            Trainer trainer = trainerRepository.findByUserUsername(trainerUsername)
-                    .orElseThrow(() -> new NotFoundException("Trainer not found: " + trainerUsername));
+        trainee.getTrainers().clear();
+        trainee.getTrainers().addAll(newTrainers);
 
-            trainee.addTrainer(trainer);
-        }
-
-        traineeRepository.save(trainee);
+        log.info("Trainee trainers updated: username={}, trainersCount={}", username, newTrainers.size());
     }
 
     @Transactional
@@ -169,11 +179,8 @@ public class TraineeService {
                                         Boolean active) {
         log.debug("Updating trainee profile: username={}", username);
 
-        Trainee trainee = traineeRepository.findByUserUsername(username)
-                .orElseThrow(() -> {
-                    log.warn("Trainee not found: {}", username);
-                    return new NotFoundException("Trainee not found for username: " + username);
-                });
+        Trainee trainee = traineeRepository.findDetailedByUserUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
 
         User user = trainee.getUser();
         user.setFirstName(firstName);
@@ -183,11 +190,7 @@ public class TraineeService {
         trainee.setDateOfBirth(dateOfBirth);
         trainee.setAddress(address);
 
-        traineeRepository.save(trainee);
-
         log.info("Trainee profile updated: username={}", username);
-
-        return traineeRepository.findDetailedByUserUsername(username)
-                .orElseThrow(() -> new NotFoundException("Trainee not found for username: " + username));
+        return trainee;
     }
 }

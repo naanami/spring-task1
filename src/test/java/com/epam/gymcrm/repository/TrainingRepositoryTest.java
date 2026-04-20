@@ -178,7 +178,7 @@ class TrainingRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        List<Trainer> result = trainerRepository.findNotAssignedToTrainee("Anna.Smith");
+        List<Trainer> result = trainerRepository.findActiveTrainersNotAssignedToTrainee("Anna.Smith");
 
         assertEquals(1, result.size());
         assertEquals("Mike.Jones", result.get(0).getUser().getUsername());

@@ -57,4 +57,5 @@ public interface TrainingRepository extends JpaRepository<Training, UUID> {
             @Param("to") LocalDateTime to,
             @Param("traineeName") String traineeName
     );
+    List<Training> findByTrainee_User_Username(String username);
 }

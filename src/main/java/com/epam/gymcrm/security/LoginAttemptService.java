@@ -1,7 +1,9 @@
 package com.epam.gymcrm.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,11 +11,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class LoginAttemptService {
 
-    private static final int MAX_ATTEMPTS = 3;
-    private static final long BLOCK_DURATION_MINUTES = 5;
+    private final int maxAttempts;
+    private final long blockDurationMinutes;
+    private final long blockDurationSeconds;
 
     private final Map<String, Integer> attempts = new ConcurrentHashMap<>();
     private final Map<String, LocalDateTime> blockedUntil = new ConcurrentHashMap<>();
+
+    public LoginAttemptService(
+            @Value("${app.security.max-attempts}") int maxAttempts,
+            @Value("${app.security.block-duration-minutes:0}") long blockDurationMinutes,
+            @Value("${app.security.block-duration-seconds:0}") long blockDurationSeconds
+    ) {
+        this.maxAttempts = maxAttempts;
+        this.blockDurationMinutes = blockDurationMinutes;
+        this.blockDurationSeconds = blockDurationSeconds;
+    }
 
     public void loginSucceeded(String username) {
         attempts.remove(username);
@@ -28,8 +41,8 @@ public class LoginAttemptService {
         int newAttempts = getAttempts(username) + 1;
         attempts.put(username, newAttempts);
 
-        if (newAttempts >= MAX_ATTEMPTS) {
-            blockedUntil.put(username, LocalDateTime.now().plusMinutes(BLOCK_DURATION_MINUTES));
+        if (newAttempts >= maxAttempts) {
+            blockedUntil.put(username, LocalDateTime.now().plus(getBlockDuration()));
         }
     }
 
@@ -52,18 +65,21 @@ public class LoginAttemptService {
     public long getRemainingBlockSeconds(String username) {
         LocalDateTime blockEnd = blockedUntil.get(username);
 
-        if (blockEnd == null) {
+        if (blockEnd == null || !isBlocked(username)) {
             return 0;
         }
 
-        if (!isBlocked(username)) {
-            return 0;
-        }
-
-        return java.time.Duration.between(LocalDateTime.now(), blockEnd).getSeconds();
+        return Duration.between(LocalDateTime.now(), blockEnd).getSeconds();
     }
 
     private int getAttempts(String username) {
         return attempts.getOrDefault(username, 0);
+    }
+
+    private Duration getBlockDuration() {
+        if (blockDurationSeconds > 0) {
+            return Duration.ofSeconds(blockDurationSeconds);
+        }
+        return Duration.ofMinutes(blockDurationMinutes);
     }
 }

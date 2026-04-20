@@ -8,6 +8,8 @@ import com.epam.gymcrm.exception.NotFoundException;
 import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,8 +19,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Counter;
 
 @Service
 public class TrainingService {
@@ -28,14 +28,18 @@ public class TrainingService {
     private final TrainingRepository trainingRepository;
     private final TraineeRepository traineeRepository;
     private final TrainerRepository trainerRepository;
+    private final TrainerWorkloadIntegrationService trainerWorkloadIntegrationService;
     private final Counter trainingCreatedCounter;
 
     public TrainingService(TrainingRepository trainingRepository,
                            TraineeRepository traineeRepository,
-                           TrainerRepository trainerRepository, MeterRegistry meterRegistry) {
+                           TrainerRepository trainerRepository,
+                           TrainerWorkloadIntegrationService trainerWorkloadIntegrationService,
+                           MeterRegistry meterRegistry) {
         this.trainingRepository = trainingRepository;
         this.traineeRepository = traineeRepository;
         this.trainerRepository = trainerRepository;
+        this.trainerWorkloadIntegrationService = trainerWorkloadIntegrationService;
         this.trainingCreatedCounter = meterRegistry.counter("trainings.created");
     }
 
@@ -67,39 +71,22 @@ public class TrainingService {
                 trainingDuration
         );
 
-        Training saved = trainingRepository.save(training);
+        Training savedTraining = trainingRepository.save(training);
 
-        log.info("Training created: id={}, name={}", saved.getId(), trainingName);
-        return saved;
-    }
+        trainingCreatedCounter.increment();
+        trainerWorkloadIntegrationService.sendTrainingAdded(
+                trainer,
+                trainingDate.toLocalDate(),
+                trainingDuration
+        );
 
-    private void validateDuration(int trainingDuration) {
-        if (trainingDuration <= 0) {
-            log.warn("Invalid training duration: {}", trainingDuration);
-            throw new IllegalArgumentException("Training duration must be > 0");
-        }
-    }
+        log.info("Training created: id={}, traineeUsername={}, trainerUsername={}, name={}",
+                savedTraining.getId(),
+                trainee.getUser().getUsername(),
+                trainer.getUser().getUsername(),
+                trainingName);
 
-    @Transactional(readOnly = true)
-    public Optional<Training> selectTraining(UUID trainingId) {
-        log.debug("Selecting training: id={}", trainingId);
-        return trainingRepository.findById(trainingId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Training> selectAllTrainings() {
-        log.debug("Selecting all trainings");
-        return trainingRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public long countTrainings() {
-        return trainingRepository.count();
-    }
-
-    @Transactional
-    public void deleteAllTrainings() {
-        trainingRepository.deleteAll();
+        return savedTraining;
     }
 
     @Transactional
@@ -109,6 +96,9 @@ public class TrainingService {
                                TrainingType trainingType,
                                LocalDateTime trainingDate,
                                Integer duration) {
+
+        log.debug("Creating training: traineeUsername={}, trainerUsername={}, type={}, duration={}",
+                traineeUsername, trainerUsername, trainingType, duration);
 
         validateDuration(duration);
 
@@ -127,8 +117,50 @@ public class TrainingService {
                 duration
         );
 
-        trainingRepository.save(training);
+        Training savedTraining = trainingRepository.save(training);
+
         trainingCreatedCounter.increment();
+        trainerWorkloadIntegrationService.sendTrainingAdded(
+                trainer,
+                trainingDate.toLocalDate(),
+                duration
+        );
+
+        log.info("Training created: id={}, traineeUsername={}, trainerUsername={}, name={}",
+                savedTraining.getId(),
+                traineeUsername,
+                trainerUsername,
+                trainingName);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Training> selectTraining(UUID trainingId) {
+        log.debug("Selecting training: id={}", trainingId);
+        return trainingRepository.findById(trainingId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Training> selectAllTrainings() {
+        log.debug("Selecting all trainings");
+        return trainingRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public long countTrainings() {
+        log.debug("Counting trainings");
+        return trainingRepository.count();
+    }
+
+    @Transactional
+    public void deleteAllTrainings() {
+        log.warn("Deleting all trainings");
+        trainingRepository.deleteAll();
+    }
+
+    private void validateDuration(Integer trainingDuration) {
+        if (trainingDuration == null || trainingDuration <= 0) {
+            log.warn("Invalid training duration: {}", trainingDuration);
+            throw new IllegalArgumentException("Training duration must be > 0");
+        }
+    }
 }

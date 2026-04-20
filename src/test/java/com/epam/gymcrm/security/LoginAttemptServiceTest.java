@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LoginAttemptServiceTest {
 
-    private final LoginAttemptService service = new LoginAttemptService();
+    private final LoginAttemptService service = new LoginAttemptService(3, 0, 30);
 
     @Test
     void userShouldNotBeBlockedInitially() {

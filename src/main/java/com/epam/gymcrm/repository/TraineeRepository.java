@@ -18,4 +18,6 @@ public interface TraineeRepository extends JpaRepository<Trainee, Long> {
     Optional<Trainee> findDetailedByUserUsername(String username);
 
 
+
+
 }

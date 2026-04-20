@@ -1,8 +1,8 @@
 package com.epam.gymcrm.security;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collections;
 
@@ -10,23 +10,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JwtServiceTest {
 
-    private final JwtService jwtService =
-            new JwtService("ThisIsASecretKeyForJwtSigningThatMustBeAtLeast32BytesLong123", 3600000);
+    private JwtService jwtService;
 
-    @Test
-    void generateTokenShouldCreateValidToken() {
-        String token = jwtService.generateToken("john.doe");
-
-        assertNotNull(token);
-        assertEquals("john.doe", jwtService.extractUsername(token));
+    @BeforeEach
+    void setUp() {
+        jwtService = new JwtService("thisIsATestJwtSecretKeyThatIsLongEnough123", 3600000);
     }
 
     @Test
-    void isTokenValidShouldReturnTrueForMatchingUser() {
+    void generateTokenShouldReturnValidToken() {
         String token = jwtService.generateToken("john.doe");
 
-        UserDetails userDetails = new User("john.doe", "pass", Collections.emptyList());
+        User userDetails = new User("john.doe", "pass", Collections.emptyList());
 
+        assertEquals("john.doe", jwtService.extractUsername(token));
         assertTrue(jwtService.isTokenValid(token, userDetails));
     }
 
@@ -34,7 +31,7 @@ class JwtServiceTest {
     void isTokenValidShouldReturnFalseForDifferentUser() {
         String token = jwtService.generateToken("john.doe");
 
-        UserDetails userDetails = new User("anna.smith", "pass", Collections.emptyList());
+        User userDetails = new User("jane.doe", "pass", Collections.emptyList());
 
         assertFalse(jwtService.isTokenValid(token, userDetails));
     }
